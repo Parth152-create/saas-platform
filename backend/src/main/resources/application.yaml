@@ -2,16 +2,19 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/saas_db
+    url: jdbc:postgresql://localhost:5434/saas_db
     username: saas
     password: saas_dev_pw
   jpa:
     hibernate:
       ddl-auto: none
+    open-in-view: false
   data:
     redis:
       host: localhost
-      port: 6379
+      port: 6380
+  flyway:
+    locations: classpath:db/migration/global
 
 server:
-  port: 8081
+  port: 8090

@@ -1,0 +1,8 @@
+CREATE TABLE tenant_registry (
+    id BIGSERIAL PRIMARY KEY,
+    tenant_id VARCHAR(50) NOT NULL UNIQUE,
+    schema_name VARCHAR(63) NOT NULL UNIQUE,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    plan VARCHAR(50) NOT NULL DEFAULT 'FREE',
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
