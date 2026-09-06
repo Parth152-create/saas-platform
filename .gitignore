@@ -301,3 +301,4 @@ dist
 #!! ERROR: vscode is undefined. Use list command to see defined gitignore types !!#
 
 # End of https://www.toptal.com/developers/gitignore/api/java,maven,node,intellij,vscode
+backend/src/main/resources/certs/jwt-private.pem

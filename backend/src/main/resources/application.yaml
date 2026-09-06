@@ -16,5 +16,12 @@ spring:
   flyway:
     locations: classpath:db/migration/global
 
+app:
+  jwt:
+    public-key: classpath:certs/jwt-public.pem
+    private-key: classpath:certs/jwt-private.pem
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
+
 server:
   port: 8090
