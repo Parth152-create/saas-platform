@@ -52,6 +52,14 @@ public class JwtService {
         return new TokenPair(accessToken, refreshToken, props.getAccessTokenTtl().toSeconds());
     }
 
+    public boolean isRefreshTokenValid(String jti) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey("refresh:" + jti));
+    }
+
+    public void revokeRefreshToken(String jti) {
+        redisTemplate.delete("refresh:" + jti);
+    }
+
     private String encode(JwtClaimsSet claims) {
         JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).build();
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
