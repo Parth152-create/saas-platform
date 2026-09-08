@@ -6,10 +6,14 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.security.config.crypto.RsaKeyConversionServicePostProcessor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Configuration
@@ -34,5 +38,19 @@ public class JwtConfig {
     @Bean
     JwtDecoder jwtDecoder(JwtProperties props) {
         return NimbusJwtDecoder.withPublicKey(props.getPublicKey()).build();
+    }
+
+    @Bean
+    JwtDecoder googleJwtDecoder(@Value("${app.google.client-id}") String googleClientId) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder
+                .withJwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
+                .build();
+
+        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer("https://accounts.google.com");
+        OAuth2TokenValidator<Jwt> withAudience = new JwtClaimValidator<List<String>>(
+                "aud", aud -> aud != null && aud.contains(googleClientId));
+
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, withAudience));
+        return decoder;
     }
 }

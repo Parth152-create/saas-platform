@@ -4,6 +4,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -28,6 +29,11 @@ public class TenantRegistryService {
                 rs.getString("status"),
                 rs.getString("plan")
         ), tenantId).stream().findFirst();
+    }
+
+    public List<String> findAllSchemaNames() {
+        return jdbcTemplate.queryForList(
+                "SELECT schema_name FROM public.tenant_registry", String.class);
     }
 
     public TenantRecord register(String tenantId, String schemaName, String plan) {

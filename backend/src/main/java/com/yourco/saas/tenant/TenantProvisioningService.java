@@ -1,6 +1,8 @@
 package com.yourco.saas.tenant;
 
 import org.flywaydb.core.Flyway;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -9,9 +11,16 @@ import javax.sql.DataSource;
 public class TenantProvisioningService {
 
     private final DataSource dataSource;
+    private final TenantRegistryService tenantRegistryService;
 
-    public TenantProvisioningService(DataSource dataSource) {
+    public TenantProvisioningService(DataSource dataSource, TenantRegistryService tenantRegistryService) {
         this.dataSource = dataSource;
+        this.tenantRegistryService = tenantRegistryService;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void migrateExistingTenants() {
+        tenantRegistryService.findAllSchemaNames().forEach(this::provisionTenant);
     }
 
     public void provisionTenant(String schemaName) {

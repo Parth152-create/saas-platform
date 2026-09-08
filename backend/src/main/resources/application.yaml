@@ -17,6 +17,8 @@ spring:
     locations: classpath:db/migration/global
 
 app:
+  google:
+    client-id:  906646436149-dkke9514rgicekhqsglpavm8e5iffgug.apps.googleusercontent.com
   jwt:
     public-key: classpath:certs/jwt-public.pem
     private-key: classpath:certs/jwt-private.pem

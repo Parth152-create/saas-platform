@@ -5,6 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.yourco.saas.common.audit.Auditable;
 
 // TEMPORARY — verifies RoleHierarchy wiring. Delete once real endpoints have their own @PreAuthorize.
 @RestController
