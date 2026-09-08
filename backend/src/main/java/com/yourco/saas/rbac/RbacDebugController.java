@@ -14,18 +14,21 @@ public class RbacDebugController {
 
     @GetMapping("/user")
     @PreAuthorize("hasRole('USER')")
+    @Auditable(action = "RBAC_DEBUG_USER_CHECK")
     public ResponseEntity<String> userLevel() {
         return ResponseEntity.ok("USER-or-above access granted");
     }
 
     @GetMapping("/manager")
     @PreAuthorize("hasRole('MANAGER')")
+    @Auditable(action = "RBAC_DEBUG_MANAGER_CHECK")
     public ResponseEntity<String> managerLevel() {
         return ResponseEntity.ok("MANAGER-or-above access granted");
     }
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
+    @Auditable(action = "RBAC_DEBUG_ADMIN_CHECK")
     public ResponseEntity<String> adminLevel() {
         return ResponseEntity.ok("ADMIN-or-above access granted");
     }

@@ -62,6 +62,7 @@ public class AuditAspect {
         if (auth == null) return null;
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
+                .map(a -> a.startsWith("ROLE_") ? a.substring(5) : a)
                 .findFirst()
                 .orElse(null);
     }
