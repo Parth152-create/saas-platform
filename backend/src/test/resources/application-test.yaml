@@ -1,0 +1,4 @@
+app:
+  jwt:
+    public-key: classpath:certs/jwt-test-public.pem
+    private-key: classpath:certs/jwt-test-private.pem
