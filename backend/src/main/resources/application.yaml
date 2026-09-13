@@ -27,3 +27,12 @@ app:
 
 server:
   port: 8090
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  checkout-success-url: "http://localhost:5173/billing/success?session_id={CHECKOUT_SESSION_ID}"
+  checkout-cancel-url: "http://localhost:5173/billing/cancel"
+  price-tiers:
+    price_replace_with_your_pro_price_id: PRO
+    price_replace_with_your_enterprise_price_id: ENTERPRISE

@@ -49,7 +49,7 @@ public class Subscription {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected Subscription() {}
+    public Subscription() {}
 
     public Long getId() { return id; }
     public Long getCustomerId() { return customerId; }

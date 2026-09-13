@@ -49,7 +49,7 @@ public class Invoice {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    protected Invoice() {}
+    public Invoice() {}
 
     public Long getId() { return id; }
     public Long getCustomerId() { return customerId; }

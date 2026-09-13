@@ -32,7 +32,7 @@ public class Customer {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected Customer() {}
+    public Customer() {}
 
     public Long getId() { return id; }
     public String getStripeCustomerId() { return stripeCustomerId; }
