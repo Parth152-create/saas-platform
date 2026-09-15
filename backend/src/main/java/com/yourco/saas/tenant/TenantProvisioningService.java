@@ -34,7 +34,7 @@ public class TenantProvisioningService {
                 .migrate();
     }
 
-    public void provisionTenant(String tenantId, String schemaName, String plan) {
+    public TenantRecord provisionTenant(String tenantId, String schemaName, String plan) {
         validateTenantId(tenantId);
         validateSchemaName(schemaName);
 
@@ -44,6 +44,8 @@ public class TenantProvisioningService {
                 .locations("classpath:db/migration/tenant")
                 .load()
                 .migrate();
+
+        return tenantRegistryService.register(tenantId, schemaName, plan);
     }
 
     private void validateTenantId(String tenantId) {

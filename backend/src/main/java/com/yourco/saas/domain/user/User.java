@@ -46,6 +46,16 @@ public class User {
 
     protected User() {}
 
+    public static User newLocalUser(String email, String passwordHash, Role role) {
+        User user = new User();
+        user.email = email;
+        user.passwordHash = passwordHash;
+        user.role = role;
+        user.authProvider = AuthProvider.LOCAL;
+        user.status = UserStatus.ACTIVE;
+        return user;
+    }
+
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

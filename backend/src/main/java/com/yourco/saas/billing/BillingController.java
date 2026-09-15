@@ -31,13 +31,16 @@ public class BillingController {
     private final StripeProperties stripeProperties;
     private final TenantRegistryService tenantRegistryService;
     private final UserRepository userRepository;
+    private final StripeCheckoutSessionCreator checkoutSessionCreator;
 
     public BillingController(StripeProperties stripeProperties,
                               TenantRegistryService tenantRegistryService,
-                              UserRepository userRepository) {
+                              UserRepository userRepository,
+                              StripeCheckoutSessionCreator checkoutSessionCreator) {
         this.stripeProperties = stripeProperties;
         this.tenantRegistryService = tenantRegistryService;
         this.userRepository = userRepository;
+        this.checkoutSessionCreator = checkoutSessionCreator;
     }
 
     @PostMapping("/checkout-session")
@@ -75,7 +78,7 @@ public class BillingController {
         }
 
         try {
-            Session session = Session.create(paramsBuilder.build());
+            Session session = checkoutSessionCreator.create(paramsBuilder.build());
             return ResponseEntity.ok(new CreateCheckoutSessionResponse(session.getUrl()));
         } catch (StripeException e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Stripe checkout session creation failed: " + e.getMessage());

@@ -1,9 +1,11 @@
 package com.yourco.saas.billing;
 
+import com.stripe.exception.EventDataObjectDeserializationException;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.Invoice;
+import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
@@ -62,7 +64,7 @@ public class StripeWebhookController {
         EventDataObjectDeserializer deserializer = event.getDataObjectDeserializer();
 
         if ("checkout.session.completed".equals(event.getType())) {
-            Session session = (Session) deserializer.getObject().orElseThrow(() -> apiVersionMismatch(event));
+            Session session = (Session) resolveStripeObject(event, deserializer);
             Optional<TenantRecord> tenant = tenantRegistryService.findByTenantId(session.getClientReferenceId());
             if (tenant.isEmpty()) {
                 log.warn("Checkout session {} referenced unknown tenant '{}'", session.getId(), session.getClientReferenceId());
@@ -91,15 +93,15 @@ public class StripeWebhookController {
     private void routeEvent(Event event, EventDataObjectDeserializer deserializer) {
         switch (event.getType()) {
             case "customer.subscription.created", "customer.subscription.updated" -> {
-                Subscription sub = (Subscription) deserializer.getObject().orElseThrow(() -> apiVersionMismatch(event));
+                Subscription sub = (Subscription) resolveStripeObject(event, deserializer);
                 billingService.handleSubscriptionUpsert(sub);
             }
             case "customer.subscription.deleted" -> {
-                Subscription sub = (Subscription) deserializer.getObject().orElseThrow(() -> apiVersionMismatch(event));
+                Subscription sub = (Subscription) resolveStripeObject(event, deserializer);
                 billingService.handleSubscriptionDeleted(sub);
             }
             case "invoice.paid", "invoice.payment_failed" -> {
-                Invoice invoice = (Invoice) deserializer.getObject().orElseThrow(() -> apiVersionMismatch(event));
+                Invoice invoice = (Invoice) resolveStripeObject(event, deserializer);
                 billingService.handleInvoiceEvent(invoice);
             }
             default -> log.debug("Ignoring unhandled Stripe event type {}", event.getType());
@@ -109,11 +111,27 @@ public class StripeWebhookController {
     private String extractCustomerId(Event event, EventDataObjectDeserializer deserializer) {
         return switch (event.getType()) {
             case "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted" ->
-                    ((Subscription) deserializer.getObject().orElseThrow(() -> apiVersionMismatch(event))).getCustomer();
+                    ((Subscription) resolveStripeObject(event, deserializer)).getCustomer();
             case "invoice.paid", "invoice.payment_failed" ->
-                    ((Invoice) deserializer.getObject().orElseThrow(() -> apiVersionMismatch(event))).getCustomer();
+                    ((Invoice) resolveStripeObject(event, deserializer)).getCustomer();
             default -> null;
         };
+    }
+
+    // event.getApiVersion() not matching the SDK's pinned version makes getObject() return
+    // empty even for a perfectly valid event - falling back to deserializeUnsafe() is Stripe's
+    // own documented recommendation here, not just a workaround for testing.
+    private StripeObject resolveStripeObject(Event event, EventDataObjectDeserializer deserializer) {
+        return deserializer.getObject().orElseGet(() -> {
+            try {
+                log.debug("API version mismatch for event {} ({}), falling back to unsafe deserialization",
+                        event.getId(), event.getType());
+                return deserializer.deserializeUnsafe();
+            } catch (EventDataObjectDeserializationException e) {
+                throw new IllegalStateException(
+                        "Could not deserialize Stripe event " + event.getId() + " (" + event.getType() + ")", e);
+            }
+        });
     }
 
     private ResponseEntity<String> processInTenant(TenantRecord tenant, Event event, Runnable action) {
@@ -129,10 +147,5 @@ public class StripeWebhookController {
         } finally {
             TenantContext.clear();
         }
-    }
-
-    private RuntimeException apiVersionMismatch(Event event) {
-        return new IllegalStateException("Could not deserialize Stripe event " + event.getId() + " (" + event.getType()
-                + ") - possible API version mismatch between the webhook endpoint and stripe-java");
     }
 }

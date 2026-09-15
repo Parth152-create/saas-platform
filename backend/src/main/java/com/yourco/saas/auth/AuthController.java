@@ -3,14 +3,17 @@ package com.yourco.saas.auth;
 import com.yourco.saas.auth.dto.GoogleLoginRequest;
 import com.yourco.saas.auth.dto.LoginRequest;
 import com.yourco.saas.auth.dto.RefreshRequest;
+import com.yourco.saas.auth.dto.SignupRequest;
 import com.yourco.saas.auth.dto.TokenResponse;
 import com.yourco.saas.common.audit.AuditLog;
 import com.yourco.saas.common.audit.AuditLogRepository;
 import com.yourco.saas.domain.user.AuthProvider;
+import com.yourco.saas.domain.user.Role;
 import com.yourco.saas.domain.user.User;
 import com.yourco.saas.domain.user.UserRepository;
 import com.yourco.saas.domain.user.UserStatus;
 import com.yourco.saas.tenant.TenantContext;
+import com.yourco.saas.tenant.TenantOnboardingService;
 import com.yourco.saas.tenant.TenantRecord;
 import com.yourco.saas.tenant.TenantRegistryService;
 import jakarta.validation.Valid;
@@ -31,6 +34,7 @@ import java.util.UUID;
 public class AuthController {
 
     private final TenantRegistryService tenantRegistryService;
+    private final TenantOnboardingService tenantOnboardingService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -39,6 +43,7 @@ public class AuthController {
     private final AuditLogRepository auditLogRepository;
 
     public AuthController(TenantRegistryService tenantRegistryService,
+                           TenantOnboardingService tenantOnboardingService,
                            UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            JwtService jwtService,
@@ -46,12 +51,37 @@ public class AuthController {
                            @Qualifier("googleJwtDecoder") JwtDecoder googleJwtDecoder,
                            AuditLogRepository auditLogRepository) {
         this.tenantRegistryService = tenantRegistryService;
+        this.tenantOnboardingService = tenantOnboardingService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.jwtDecoder = jwtDecoder;
         this.googleJwtDecoder = googleJwtDecoder;
         this.auditLogRepository = auditLogRepository;
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<TokenResponse> signup(@RequestBody @Valid SignupRequest request) {
+        TenantRecord tenant = tenantOnboardingService.onboardTenant(request.tenantId(), "FREE")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Tenant ID already taken: " + request.tenantId()));
+
+        TenantContext.setTenant(tenant.schemaName());
+        try {
+            User admin = User.newLocalUser(
+                    request.email(), passwordEncoder.encode(request.password()), Role.SUPER_ADMIN);
+            userRepository.save(admin);
+
+            TokenPair tokens = jwtService.issueTokens(admin, tenant.tenantId());
+
+            auditLogRepository.save(new AuditLog(
+                    admin.getId(), admin.getRole().name(), "TENANT_SIGNUP", "SUCCESS", null));
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(new TokenResponse(
+                    tokens.accessToken(), tokens.refreshToken(), tokens.expiresInSeconds()));
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     @PostMapping("/login")

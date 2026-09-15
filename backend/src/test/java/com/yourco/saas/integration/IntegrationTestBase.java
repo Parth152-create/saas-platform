@@ -76,6 +76,14 @@ public abstract class IntegrationTestBase {
         return record;
     }
 
+    /**
+     * Registers a schema created through a real HTTP endpoint (e.g. /api/auth/signup)
+     * rather than provisionTenant() above, so it still gets cleaned up after this test.
+     */
+    protected void trackProvisionedSchema(String schemaName) {
+        provisionedSchemas.add(schemaName);
+    }
+
     @AfterEach
     protected void cleanUpProvisionedTenants() {
         TenantContext.clear();

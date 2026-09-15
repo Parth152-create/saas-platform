@@ -2,7 +2,8 @@ app:
   jwt:
     public-key: classpath:certs/jwt-test-public.pem
     private-key: classpath:certs/jwt-test-private.pem
-
-logging:
-  level:
-    org.flywaydb: DEBUG
+  stripe:
+    webhook-secret: whsec_test_dummy_secret_for_local_tests
+    price-tiers:
+      price_test_pro: PRO
+      price_test_enterprise: ENTERPRISE
