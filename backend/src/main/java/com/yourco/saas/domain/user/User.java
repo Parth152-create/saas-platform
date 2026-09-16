@@ -36,6 +36,12 @@ public class User {
     @Column(nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "invite_token")
+    private String inviteToken;
+
+    @Column(name = "invite_token_expires_at")
+    private Instant inviteTokenExpiresAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -56,6 +62,21 @@ public class User {
         return user;
     }
 
+    public static User newInvitedUser(String email, Role role, String inviteToken, Instant inviteTokenExpiresAt) {
+        User user = new User();
+        user.email = email;
+        user.role = role;
+        user.status = UserStatus.INVITED;
+        user.inviteToken = inviteToken;
+        user.inviteTokenExpiresAt = inviteTokenExpiresAt;
+        return user;
+    }
+
+    public void clearInviteToken() {
+        this.inviteToken = null;
+        this.inviteTokenExpiresAt = null;
+    }
+
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -69,6 +90,8 @@ public class User {
     public void setRole(Role role) { this.role = role; }
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
+    public String getInviteToken() { return inviteToken; }
+    public Instant getInviteTokenExpiresAt() { return inviteTokenExpiresAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

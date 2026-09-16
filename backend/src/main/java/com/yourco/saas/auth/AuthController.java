@@ -1,5 +1,6 @@
 package com.yourco.saas.auth;
 
+import com.yourco.saas.auth.dto.AcceptInviteRequest;
 import com.yourco.saas.auth.dto.GoogleLoginRequest;
 import com.yourco.saas.auth.dto.LoginRequest;
 import com.yourco.saas.auth.dto.RefreshRequest;
@@ -27,6 +28,7 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @RestController
@@ -78,6 +80,38 @@ public class AuthController {
                     admin.getId(), admin.getRole().name(), "TENANT_SIGNUP", "SUCCESS", null));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(new TokenResponse(
+                    tokens.accessToken(), tokens.refreshToken(), tokens.expiresInSeconds()));
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<TokenResponse> acceptInvite(@RequestBody @Valid AcceptInviteRequest request) {
+        TenantRecord tenant = tenantRegistryService.findByTenantId(request.tenantId())
+                .filter(t -> "ACTIVE".equals(t.status()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid invite"));
+
+        TenantContext.setTenant(tenant.schemaName());
+        try {
+            User user = userRepository.findByInviteToken(request.token())
+                    .filter(u -> u.getStatus() == UserStatus.INVITED)
+                    .filter(u -> u.getInviteTokenExpiresAt() != null
+                            && u.getInviteTokenExpiresAt().isAfter(Instant.now()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired invite"));
+
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+            user.setAuthProvider(AuthProvider.LOCAL);
+            user.setStatus(UserStatus.ACTIVE);
+            user.clearInviteToken();
+            userRepository.save(user);
+
+            TokenPair tokens = jwtService.issueTokens(user, tenant.tenantId());
+
+            auditLogRepository.save(new AuditLog(
+                    user.getId(), user.getRole().name(), "INVITE_ACCEPTED", "SUCCESS", null));
+
+            return ResponseEntity.ok(new TokenResponse(
                     tokens.accessToken(), tokens.refreshToken(), tokens.expiresInSeconds()));
         } finally {
             TenantContext.clear();
