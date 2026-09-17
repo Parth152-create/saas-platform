@@ -1,5 +1,6 @@
 package com.yourco.saas.users;
 
+import com.yourco.saas.domain.user.Role;
 import com.yourco.saas.domain.user.User;
 import com.yourco.saas.domain.user.UserRepository;
 import com.yourco.saas.users.dto.InviteUserRequest;
@@ -8,6 +9,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +34,10 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InviteUserResponse> inviteUser(@RequestBody @Valid InviteUserRequest request) {
+        if (request.role() == Role.SUPER_ADMIN && !isSuperAdmin()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only SUPER_ADMIN can invite SUPER_ADMIN users");
+        }
+
         if (userRepository.findByEmailIgnoreCase(request.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A user with this email already exists in this tenant");
         }
@@ -43,5 +50,11 @@ public class UserController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new InviteUserResponse(user.getEmail(), user.getRole(), token, expiresAt));
+    }
+
+    private boolean isSuperAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a.getAuthority()));
     }
 }

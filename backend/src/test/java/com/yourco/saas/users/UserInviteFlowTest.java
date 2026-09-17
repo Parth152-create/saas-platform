@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @AutoConfigureTestRestTemplate
 class UserInviteFlowTest extends IntegrationTestBase {
@@ -41,18 +42,24 @@ class UserInviteFlowTest extends IntegrationTestBase {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    private String loginAsAdmin(TenantRecord tenant) {
+    private String loginAsRole(TenantRecord tenant, Role role) {
+        String email = role.name().toLowerCase() + "@example.test";
         TenantContext.setTenant(tenant.schemaName());
         try {
-            User admin = User.newLocalUser("admin@example.test", passwordEncoder.encode("password123"), Role.ADMIN);
-            userRepository.save(admin);
+            User user = User.newLocalUser(email, passwordEncoder.encode("password123"), role);
+            userRepository.save(user);
         } finally {
             TenantContext.clear();
         }
 
         ResponseEntity<TokenResponse> login = restTemplate.postForEntity(
-                "/api/auth/login", new LoginRequest(tenant.tenantId(), "admin@example.test", "password123"), TokenResponse.class);
+                "/api/auth/login", new LoginRequest(tenant.tenantId(), email, "password123"), TokenResponse.class);
+        assertNotNull(login.getBody(), "Login failed for role " + role);
         return login.getBody().accessToken();
+    }
+
+    private String loginAsAdmin(TenantRecord tenant) {
+        return loginAsRole(tenant, Role.ADMIN);
     }
 
     @Test
@@ -91,20 +98,124 @@ class UserInviteFlowTest extends IntegrationTestBase {
     }
 
     @Test
-    void nonAdminCannotInviteUsers() {
-        TenantRecord tenant = provisionTenant("invite-forbidden");
+    void superAdminCanInviteSuperAdmin() {
+        TenantRecord tenant = provisionTenant("sa-inv-sa");
+        String token = loginAsRole(tenant, Role.SUPER_ADMIN);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<InviteUserRequest> entity =
+                new HttpEntity<>(new InviteUserRequest("new-sa@example.test", Role.SUPER_ADMIN), headers);
+
+        ResponseEntity<InviteUserResponse> response = restTemplate.exchange(
+                "/api/users", HttpMethod.POST, entity, InviteUserResponse.class);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("new-sa@example.test", response.getBody().email());
+        assertEquals(Role.SUPER_ADMIN, response.getBody().role());
+    }
+
+    @Test
+    void superAdminCanInviteAdmin() {
+        TenantRecord tenant = provisionTenant("sa-inv-admin");
+        String token = loginAsRole(tenant, Role.SUPER_ADMIN);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<InviteUserRequest> entity =
+                new HttpEntity<>(new InviteUserRequest("new-admin@example.test", Role.ADMIN), headers);
+
+        ResponseEntity<InviteUserResponse> response = restTemplate.exchange(
+                "/api/users", HttpMethod.POST, entity, InviteUserResponse.class);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(Role.ADMIN, response.getBody().role());
+    }
+
+    @Test
+    void adminCanInviteAdmin() {
+        TenantRecord tenant = provisionTenant("admin-inv-admin");
+        String token = loginAsRole(tenant, Role.ADMIN);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<InviteUserRequest> entity =
+                new HttpEntity<>(new InviteUserRequest("peer-admin@example.test", Role.ADMIN), headers);
+
+        ResponseEntity<InviteUserResponse> response = restTemplate.exchange(
+                "/api/users", HttpMethod.POST, entity, InviteUserResponse.class);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(Role.ADMIN, response.getBody().role());
+    }
+
+    @Test
+    void adminCanInviteManager() {
+        TenantRecord tenant = provisionTenant("admin-inv-mgr");
+        String token = loginAsRole(tenant, Role.ADMIN);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<InviteUserRequest> entity =
+                new HttpEntity<>(new InviteUserRequest("mgr@example.test", Role.MANAGER), headers);
+
+        ResponseEntity<InviteUserResponse> response = restTemplate.exchange(
+                "/api/users", HttpMethod.POST, entity, InviteUserResponse.class);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(Role.MANAGER, response.getBody().role());
+    }
+
+    @Test
+    void adminCanInviteUser() {
+        TenantRecord tenant = provisionTenant("admin-inv-user");
+        String token = loginAsRole(tenant, Role.ADMIN);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<InviteUserRequest> entity =
+                new HttpEntity<>(new InviteUserRequest("usr@example.test", Role.USER), headers);
+
+        ResponseEntity<InviteUserResponse> response = restTemplate.exchange(
+                "/api/users", HttpMethod.POST, entity, InviteUserResponse.class);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(Role.USER, response.getBody().role());
+    }
+
+    @Test
+    void adminAttemptingToInviteSuperAdminReceivesForbidden() {
+        TenantRecord tenant = provisionTenant("admin-inv-sa-fail");
+        String token = loginAsRole(tenant, Role.ADMIN);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        HttpEntity<InviteUserRequest> entity =
+                new HttpEntity<>(new InviteUserRequest("escalate@example.test", Role.SUPER_ADMIN), headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/users", HttpMethod.POST, entity, String.class);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
 
         TenantContext.setTenant(tenant.schemaName());
         try {
-            User user = User.newLocalUser("plainuser@example.test", passwordEncoder.encode("password123"), Role.USER);
-            userRepository.save(user);
+            assertTrue(userRepository.findByEmailIgnoreCase("escalate@example.test").isEmpty(),
+                    "Super admin user must not have been created or saved");
         } finally {
             TenantContext.clear();
         }
+    }
 
-        ResponseEntity<TokenResponse> login = restTemplate.postForEntity(
-                "/api/auth/login", new LoginRequest(tenant.tenantId(), "plainuser@example.test", "password123"), TokenResponse.class);
-        String userToken = login.getBody().accessToken();
+    @Test
+    void nonAdminCannotInviteUsers() {
+        TenantRecord tenant = provisionTenant("invite-forbidden");
+        String userToken = loginAsRole(tenant, Role.USER);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(userToken);
@@ -115,6 +226,40 @@ class UserInviteFlowTest extends IntegrationTestBase {
                 "/api/users", HttpMethod.POST, inviteEntity, String.class);
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    }
+
+    @Test
+    void managerAttemptingToInviteAnyRoleRemainsForbidden() {
+        TenantRecord tenant = provisionTenant("mgr-inv-fail");
+        String token = loginAsRole(tenant, Role.MANAGER);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+
+        for (Role targetRole : Role.values()) {
+            HttpEntity<InviteUserRequest> entity =
+                    new HttpEntity<>(new InviteUserRequest("mgr-" + targetRole.name().toLowerCase() + "@example.test", targetRole), headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    "/api/users", HttpMethod.POST, entity, String.class);
+            assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "Manager should not invite " + targetRole);
+        }
+    }
+
+    @Test
+    void userAttemptingToInviteAnyRoleRemainsForbidden() {
+        TenantRecord tenant = provisionTenant("user-inv-fail");
+        String token = loginAsRole(tenant, Role.USER);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+
+        for (Role targetRole : Role.values()) {
+            HttpEntity<InviteUserRequest> entity =
+                    new HttpEntity<>(new InviteUserRequest("user-" + targetRole.name().toLowerCase() + "@example.test", targetRole), headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    "/api/users", HttpMethod.POST, entity, String.class);
+            assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode(), "User should not invite " + targetRole);
+        }
     }
 
     @Test

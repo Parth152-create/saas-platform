@@ -4,6 +4,12 @@ import com.stripe.model.Invoice;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.model.checkout.Session;
+import com.stripe.exception.StripeException;
+import com.stripe.param.billingportal.SessionCreateParams;
+import com.yourco.saas.billing.dto.BillingSummaryResponse;
+import com.yourco.saas.billing.dto.CreatePortalSessionResponse;
+import com.yourco.saas.billing.dto.InvoiceResponse;
+import com.yourco.saas.billing.dto.SubscriptionResponse;
 import com.yourco.saas.domain.billing.Customer;
 import com.yourco.saas.domain.billing.CustomerRepository;
 import com.yourco.saas.domain.billing.InvoiceRepository;
@@ -11,15 +17,19 @@ import com.yourco.saas.domain.billing.InvoiceStatus;
 import com.yourco.saas.domain.billing.PlanTier;
 import com.yourco.saas.domain.billing.SubscriptionRepository;
 import com.yourco.saas.domain.billing.SubscriptionStatus;
+import com.yourco.saas.tenant.TenantContext;
 import com.yourco.saas.tenant.TenantRecord;
 import com.yourco.saas.tenant.TenantRegistryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BillingService {
@@ -31,17 +41,87 @@ public class BillingService {
     private final InvoiceRepository invoiceRepository;
     private final TenantRegistryService tenantRegistryService;
     private final StripeProperties stripeProperties;
+    private final StripePortalSessionCreator portalSessionCreator;
 
     public BillingService(CustomerRepository customerRepository,
                            SubscriptionRepository subscriptionRepository,
                            InvoiceRepository invoiceRepository,
                            TenantRegistryService tenantRegistryService,
-                           StripeProperties stripeProperties) {
+                           StripeProperties stripeProperties,
+                           StripePortalSessionCreator portalSessionCreator) {
         this.customerRepository = customerRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.invoiceRepository = invoiceRepository;
         this.tenantRegistryService = tenantRegistryService;
         this.stripeProperties = stripeProperties;
+        this.portalSessionCreator = portalSessionCreator;
+    }
+
+    public CreatePortalSessionResponse createPortalSession() {
+        TenantRecord tenant = tenantRegistryService.findBySchemaName(TenantContext.getTenant())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Tenant context not resolved"));
+
+        if (tenant.stripeCustomerId() == null || tenant.stripeCustomerId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Billing has not been initialized: tenant has no Stripe customer");
+        }
+
+        SessionCreateParams params = SessionCreateParams.builder()
+                .setCustomer(tenant.stripeCustomerId())
+                .setReturnUrl(stripeProperties.getPortalReturnUrl())
+                .build();
+
+        try {
+            com.stripe.model.billingportal.Session session = portalSessionCreator.create(params);
+            return new CreatePortalSessionResponse(session.getUrl());
+        } catch (StripeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Stripe portal session creation failed: " + e.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public BillingSummaryResponse getBillingSummary() {
+        TenantRecord tenant = tenantRegistryService.findBySchemaName(TenantContext.getTenant())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Tenant context not resolved"));
+
+        if (tenant.stripeCustomerId() == null || tenant.stripeCustomerId().isBlank()) {
+            String plan = tenant.plan() != null ? tenant.plan() : PlanTier.FREE.name();
+            return new BillingSummaryResponse(plan, null, List.of());
+        }
+
+        Optional<Customer> customerOpt = customerRepository.findByStripeCustomerId(tenant.stripeCustomerId());
+        if (customerOpt.isEmpty()) {
+            String plan = tenant.plan() != null ? tenant.plan() : PlanTier.FREE.name();
+            return new BillingSummaryResponse(plan, null, List.of());
+        }
+
+        Customer customer = customerOpt.get();
+        Optional<com.yourco.saas.domain.billing.Subscription> subscriptionOpt =
+                subscriptionRepository.findByCustomerId(customer.getId());
+        List<com.yourco.saas.domain.billing.Invoice> invoices =
+                invoiceRepository.findByCustomerId(customer.getId());
+
+        SubscriptionResponse subscriptionResponse = subscriptionOpt
+                .map(SubscriptionResponse::from)
+                .orElse(null);
+
+        String plan;
+        if (subscriptionOpt.isPresent()
+                && subscriptionOpt.get().getPlanTier() != null
+                && subscriptionOpt.get().getStatus() != SubscriptionStatus.CANCELED) {
+            plan = subscriptionOpt.get().getPlanTier().name();
+        } else if (tenant.plan() != null) {
+            plan = tenant.plan();
+        } else {
+            plan = PlanTier.FREE.name();
+        }
+
+        List<InvoiceResponse> invoiceResponses = invoices.stream()
+                .map(InvoiceResponse::from)
+                .toList();
+
+        return new BillingSummaryResponse(plan, subscriptionResponse, invoiceResponses);
     }
 
     @Transactional

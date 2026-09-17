@@ -4,6 +4,7 @@ app:
     private-key: classpath:certs/jwt-test-private.pem
   stripe:
     webhook-secret: whsec_test_dummy_secret_for_local_tests
+    portal-return-url: http://localhost:5173/billing
     price-tiers:
       price_test_pro: PRO
       price_test_enterprise: ENTERPRISE

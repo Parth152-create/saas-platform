@@ -3,8 +3,10 @@ package com.yourco.saas.billing;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.yourco.saas.billing.dto.BillingSummaryResponse;
 import com.yourco.saas.billing.dto.CreateCheckoutSessionRequest;
 import com.yourco.saas.billing.dto.CreateCheckoutSessionResponse;
+import com.yourco.saas.billing.dto.CreatePortalSessionResponse;
 import com.yourco.saas.domain.billing.PlanTier;
 import com.yourco.saas.domain.user.User;
 import com.yourco.saas.domain.user.UserRepository;
@@ -16,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,15 +35,18 @@ public class BillingController {
     private final TenantRegistryService tenantRegistryService;
     private final UserRepository userRepository;
     private final StripeCheckoutSessionCreator checkoutSessionCreator;
+    private final BillingService billingService;
 
     public BillingController(StripeProperties stripeProperties,
                               TenantRegistryService tenantRegistryService,
                               UserRepository userRepository,
-                              StripeCheckoutSessionCreator checkoutSessionCreator) {
+                              StripeCheckoutSessionCreator checkoutSessionCreator,
+                              BillingService billingService) {
         this.stripeProperties = stripeProperties;
         this.tenantRegistryService = tenantRegistryService;
         this.userRepository = userRepository;
         this.checkoutSessionCreator = checkoutSessionCreator;
+        this.billingService = billingService;
     }
 
     @PostMapping("/checkout-session")
@@ -83,5 +89,17 @@ public class BillingController {
         } catch (StripeException e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Stripe checkout session creation failed: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/portal-session")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CreatePortalSessionResponse> createPortalSession() {
+        return ResponseEntity.ok(billingService.createPortalSession());
+    }
+
+    @GetMapping({"", "/current"})
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BillingSummaryResponse> getBillingSummary() {
+        return ResponseEntity.ok(billingService.getBillingSummary());
     }
 }
