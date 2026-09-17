@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import {
   Building2,
   Calendar,
+  CreditCard,
   Layers,
   Shield,
   Sliders,
@@ -17,6 +18,7 @@ export const SettingsLayout: React.FC = () => {
 
   const settingsNav = [
     { label: 'Company Profile', path: '/app/settings/company', icon: Building2 },
+    { label: 'Subscription', path: '/app/settings/subscription', icon: CreditCard },
     { label: 'User Management', path: '/app/settings/users', icon: UserPlus, requiredRole: 'ADMIN' as const },
     { label: 'Roles & Permissions', path: '/app/settings/roles', icon: Shield, requiredRole: 'ADMIN' as const },
     { label: 'Work Schedules', path: '/app/settings/work-schedules', icon: Calendar },

@@ -54,7 +54,31 @@ export interface InviteUserResponse {
   expiresAt: string;
 }
 
-export type PlanTier = 'FREE' | 'PRO' | 'ENTERPRISE';
+export type PlanTier = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
+
+export type Feature =
+  | 'EMPLOYEE_MANAGEMENT'
+  | 'TEAM_MANAGEMENT'
+  | 'PROJECT_MANAGEMENT'
+  | 'TASK_MANAGEMENT'
+  | 'CLAIMS'
+  | 'TIME_TRACKING'
+  | 'ATTENDANCE'
+  | 'LEAVE_MANAGEMENT'
+  | 'WORK_SCHEDULES'
+  | 'DOCUMENTS'
+  | 'BASIC_REPORTS'
+  | 'ADVANCED_REPORTS'
+  | 'ADVANCED_ANALYTICS'
+  | 'ADVANCED_HRM'
+  | 'CUSTOM_WORKFLOWS'
+  | 'ADVANCED_INTEGRATIONS';
+
+export interface FeatureEntitlementsResponse {
+  plan: string;
+  status: string;
+  features: Feature[];
+}
 
 export type SubscriptionStatus =
   | 'ACTIVE'

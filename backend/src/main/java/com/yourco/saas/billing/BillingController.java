@@ -7,6 +7,7 @@ import com.yourco.saas.billing.dto.BillingSummaryResponse;
 import com.yourco.saas.billing.dto.CreateCheckoutSessionRequest;
 import com.yourco.saas.billing.dto.CreateCheckoutSessionResponse;
 import com.yourco.saas.billing.dto.CreatePortalSessionResponse;
+import com.yourco.saas.billing.dto.FeatureEntitlementsResponse;
 import com.yourco.saas.domain.billing.PlanTier;
 import com.yourco.saas.domain.user.User;
 import com.yourco.saas.domain.user.UserRepository;
@@ -36,24 +37,27 @@ public class BillingController {
     private final UserRepository userRepository;
     private final StripeCheckoutSessionCreator checkoutSessionCreator;
     private final BillingService billingService;
+    private final FeatureEntitlementService featureEntitlementService;
 
     public BillingController(StripeProperties stripeProperties,
                               TenantRegistryService tenantRegistryService,
                               UserRepository userRepository,
                               StripeCheckoutSessionCreator checkoutSessionCreator,
-                              BillingService billingService) {
+                              BillingService billingService,
+                              FeatureEntitlementService featureEntitlementService) {
         this.stripeProperties = stripeProperties;
         this.tenantRegistryService = tenantRegistryService;
         this.userRepository = userRepository;
         this.checkoutSessionCreator = checkoutSessionCreator;
         this.billingService = billingService;
+        this.featureEntitlementService = featureEntitlementService;
     }
 
     @PostMapping("/checkout-session")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CreateCheckoutSessionResponse> createCheckoutSession(@RequestBody @Valid CreateCheckoutSessionRequest request) {
-        if (request.planTier() == PlanTier.FREE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create a checkout session for the FREE tier");
+        if (request.planTier() == PlanTier.FREE || request.planTier() == PlanTier.STARTER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create a checkout session for the FREE/STARTER tier");
         }
 
         TenantRecord tenant = tenantRegistryService.findBySchemaName(TenantContext.getTenant())
@@ -101,5 +105,11 @@ public class BillingController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BillingSummaryResponse> getBillingSummary() {
         return ResponseEntity.ok(billingService.getBillingSummary());
+    }
+
+    @GetMapping("/entitlements")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<FeatureEntitlementsResponse> getEntitlements() {
+        return ResponseEntity.ok(featureEntitlementService.getEntitlementsForCurrentTenant());
     }
 }

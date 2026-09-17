@@ -19,8 +19,11 @@ import {
   Users,
   X,
   FileStack,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useEntitlements } from '../../context/EntitlementsContext';
+import type { Feature } from '../../api/types';
 import { Badge } from '../common/Badge';
 
 export interface SidebarProps {
@@ -36,6 +39,8 @@ interface NavItem {
   icon: React.ElementType;
   badge?: string;
   requiredRole?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+  requiredFeature?: Feature;
+  tierRequired?: 'STARTER' | 'PRO' | 'ENTERPRISE';
 }
 
 interface NavGroup {
@@ -50,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const { user, hasRole } = useAuth();
+  const { hasFeature, plan } = useEntitlements();
   const location = useLocation();
 
   const navGroups: NavGroup[] = [
@@ -57,28 +63,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       groupTitle: 'Overview',
       items: [
         { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
-        { label: 'Projects', path: '/app/projects', icon: FolderKanban },
-        { label: 'Expense & Claims', path: '/app/claims', icon: FileStack },
-        { label: 'Tasks Board', path: '/app/tasks', icon: CheckSquare },
-        { label: 'Schedule Planner', path: '/app/schedule', icon: Calendar },
-        { label: 'Reports & Analytics', path: '/app/reports', icon: BarChart3 },
+        { label: 'Projects', path: '/app/projects', icon: FolderKanban, requiredFeature: 'PROJECT_MANAGEMENT', tierRequired: 'STARTER' },
+        { label: 'Expense & Claims', path: '/app/claims', icon: FileStack, requiredFeature: 'CLAIMS', tierRequired: 'STARTER' },
+        { label: 'Tasks Board', path: '/app/tasks', icon: CheckSquare, requiredFeature: 'TASK_MANAGEMENT', tierRequired: 'STARTER' },
+        { label: 'Schedule Planner', path: '/app/schedule', icon: Calendar, requiredFeature: 'WORK_SCHEDULES', tierRequired: 'STARTER' },
+        { label: 'Reports & Analytics', path: '/app/reports', icon: BarChart3, requiredFeature: 'BASIC_REPORTS', tierRequired: 'STARTER' },
       ],
     },
     {
       groupTitle: 'Workforce & HR',
       items: [
-        { label: 'HR Overview', path: '/app/hrm', icon: Users },
-        { label: 'Employee Directory', path: '/app/hrm/employees', icon: Users },
-        { label: 'Teams & Departments', path: '/app/hrm/teams', icon: Building2 },
-        { label: 'Attendance & Leave', path: '/app/hrm/attendance', icon: UserCheck },
-        { label: 'Time Tracking', path: '/app/hrm/time-tracking', icon: Clock },
-        { label: 'Documents & Files', path: '/app/hrm/documents', icon: FileText },
+        { label: 'HR Overview', path: '/app/hrm', icon: Users, requiredFeature: 'EMPLOYEE_MANAGEMENT', tierRequired: 'STARTER' },
+        { label: 'Employee Directory', path: '/app/hrm/employees', icon: Users, requiredFeature: 'EMPLOYEE_MANAGEMENT', tierRequired: 'STARTER' },
+        { label: 'Teams & Departments', path: '/app/hrm/teams', icon: Building2, requiredFeature: 'TEAM_MANAGEMENT', tierRequired: 'STARTER' },
+        { label: 'Attendance & Leave', path: '/app/hrm/attendance', icon: UserCheck, requiredFeature: 'ATTENDANCE', tierRequired: 'STARTER' },
+        { label: 'Time Tracking', path: '/app/hrm/time-tracking', icon: Clock, requiredFeature: 'TIME_TRACKING', tierRequired: 'STARTER' },
+        { label: 'Documents & Files', path: '/app/hrm/documents', icon: FileText, requiredFeature: 'DOCUMENTS', tierRequired: 'STARTER' },
       ],
     },
     {
       groupTitle: 'Organization & Billing',
       items: [
-        { label: 'Subscription & Billing', path: '/app/billing', icon: CreditCard, requiredRole: 'ADMIN' },
+        { label: 'Subscription & Billing', path: '/app/settings/subscription', icon: CreditCard, requiredRole: 'ADMIN' },
         { label: 'User Management', path: '/app/settings/users', icon: UserPlus, requiredRole: 'ADMIN' },
         { label: 'Roles & Permissions', path: '/app/settings/roles', icon: Shield, requiredRole: 'ADMIN' },
         { label: 'Company Settings', path: '/app/settings/company', icon: Building2 },
@@ -144,12 +150,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Tenant badge in expanded mode */}
         {!isCollapsed && user && (
           <div className="px-4 py-2 bg-neutral-50 dark:bg-[#141414] border-b border-neutral-100 dark:border-[#262626] flex items-center justify-between">
-            <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 truncate max-w-[130px]">
+            <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 truncate max-w-[120px]">
               Tenant: <strong className="text-neutral-800 dark:text-neutral-200 font-mono">{user.tenantId}</strong>
             </span>
-            <Badge variant="default" size="sm">
-              {user.role}
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              <Badge variant={plan === 'ENTERPRISE' || plan === 'PRO' ? 'primary' : 'default'} size="sm">
+                {plan}
+              </Badge>
+              <Badge variant="default" size="sm">
+                {user.role}
+              </Badge>
+            </div>
           </div>
         )}
 
@@ -175,6 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 {filteredItems.map((item) => {
                   const Icon = item.icon;
+                  const isEntitled = item.requiredFeature ? hasFeature(item.requiredFeature) : true;
                   const isActive =
                     location.pathname === item.path ||
                     (item.path !== '/app/dashboard' && location.pathname.startsWith(item.path));
@@ -184,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       key={item.path}
                       to={item.path}
                       onClick={onCloseMobile}
-                      title={isCollapsed ? item.label : undefined}
+                      title={isCollapsed ? (isEntitled ? item.label : `${item.label} (Locked - ${item.tierRequired || 'Upgrade'})`) : undefined}
                       className={`group flex items-center rounded-lg text-xs transition-all ${
                         isCollapsed
                           ? 'h-10 w-10 mx-auto justify-center'
@@ -207,7 +219,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       {!isCollapsed && (
                         <span className="truncate flex-1">{item.label}</span>
                       )}
-                      {!isCollapsed && item.badge && (
+                      {!isCollapsed && !isEntitled && (
+                        <span className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-semibold shrink-0">
+                          <Lock className="w-3 h-3" />
+                          <span>{item.tierRequired || 'PRO'}</span>
+                        </span>
+                      )}
+                      {!isCollapsed && isEntitled && item.badge && (
                         <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-800 dark:bg-[#262626] dark:text-neutral-200">
                           {item.badge}
                         </span>

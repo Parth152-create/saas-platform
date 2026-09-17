@@ -4,11 +4,15 @@ import type {
   CreateCheckoutSessionRequest,
   CreateCheckoutSessionResponse,
   CreatePortalSessionResponse,
+  FeatureEntitlementsResponse,
 } from './types';
 
 export const billingApi = {
   getBillingSummary: (): Promise<BillingSummaryResponse> =>
     apiClient.get<BillingSummaryResponse>('/api/billing'),
+
+  getEntitlements: (): Promise<FeatureEntitlementsResponse> =>
+    apiClient.get<FeatureEntitlementsResponse>('/api/billing/entitlements'),
 
   createCheckoutSession: (
     req: CreateCheckoutSessionRequest

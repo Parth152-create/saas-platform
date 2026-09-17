@@ -1,3 +1,3 @@
 package com.yourco.saas.domain.billing;
 
-public enum PlanTier { FREE, PRO, ENTERPRISE }
+public enum PlanTier { FREE, STARTER, PRO, ENTERPRISE }

@@ -23,6 +23,7 @@ import { BillingPage } from '../pages/billing/BillingPage';
 import { BillingSuccessPage } from '../pages/billing/BillingSuccessPage';
 import { BillingCancelPage } from '../pages/billing/BillingCancelPage';
 import { SettingsLayout } from '../pages/settings/SettingsLayout';
+import { SubscriptionSettingsPage } from '../pages/settings/SubscriptionSettingsPage';
 import { CompanySettingsPage } from '../pages/settings/CompanySettingsPage';
 import { UserManagementPage } from '../pages/settings/UserManagementPage';
 import { RolesPermissionsPage } from '../pages/settings/RolesPermissionsPage';
@@ -30,6 +31,7 @@ import { WorkScheduleModelsPage } from '../pages/settings/WorkScheduleModelsPage
 import { AbsenceTypesPage } from '../pages/settings/AbsenceTypesPage';
 import { IntegrationsPage } from '../pages/settings/IntegrationsPage';
 import { SystemSettingsPage } from '../pages/settings/SystemSettingsPage';
+import { LandingPage } from '../pages/LandingPage';
 import type { Role } from '../api/types';
 import { ShieldAlert } from 'lucide-react';
 
@@ -139,6 +141,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="settings" element={<SettingsLayout />}>
           <Route index element={<Navigate to="company" replace />} />
           <Route path="company" element={<CompanySettingsPage />} />
+          <Route path="subscription" element={<SubscriptionSettingsPage />} />
           <Route
             path="users"
             element={
@@ -169,17 +172,8 @@ export const AppRoutes: React.FC = () => {
         </Route>
       </Route>
 
-      {/* Root redirect */}
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/app/dashboard" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
+      {/* Public Landing Page */}
+      <Route path="/" element={<LandingPage />} />
 
       {/* 404 Catch-All */}
       <Route
