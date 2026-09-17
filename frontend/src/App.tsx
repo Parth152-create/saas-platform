@@ -1,20 +1,23 @@
-import { useEffect, useState } from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { AppRoutes } from './routes/AppRoutes';
 
-function App() {
-  const [status, setStatus] = useState<string>('loading...');
-
-  useEffect(() => {
-    fetch('http://localhost:8081/api/ping')
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setStatus('error — is the backend running?'));
-  }, []);
-
+export function App() {
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>SaaS Platform</h1>
-      <p>Backend status: <strong>{status}</strong></p>
-    </div>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <NotificationProvider>
+              <AppRoutes />
+            </NotificationProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
