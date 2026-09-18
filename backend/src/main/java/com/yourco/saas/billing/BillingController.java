@@ -63,6 +63,11 @@ public class BillingController {
         TenantRecord tenant = tenantRegistryService.findBySchemaName(TenantContext.getTenant())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Tenant context not resolved"));
 
+        if (billingService.hasActiveSubscription(tenant)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tenant already has an active subscription. Use the customer portal to change plans.");
+        }
+
         String priceId = stripeProperties.getPriceIdForTier(request.planTier())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                         "No Stripe price configured for tier " + request.planTier()));

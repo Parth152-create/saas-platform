@@ -372,7 +372,7 @@ class FeatureEntitlementTest extends IntegrationTestBase {
         TenantContext.setTenant(tenant.schemaName());
         try {
             Customer customer = customerRepository.findByStripeCustomerId("cus_cancel_123").orElseThrow();
-            Subscription subscription = subscriptionRepository.findByCustomerId(customer.getId()).orElseThrow();
+            Subscription subscription = billingService.findCurrentSubscription(customer.getId()).orElseThrow();
             subscription.setStatus(SubscriptionStatus.CANCELED);
             subscriptionRepository.save(subscription);
             tenantRegistryService.updatePlan(tenant.tenantId(), PlanTier.FREE.name());

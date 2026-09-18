@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -70,13 +71,16 @@ public class FeatureEntitlementService {
     private final TenantRegistryService tenantRegistryService;
     private final CustomerRepository customerRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final BillingService billingService;
 
     public FeatureEntitlementService(TenantRegistryService tenantRegistryService,
                                      CustomerRepository customerRepository,
-                                     SubscriptionRepository subscriptionRepository) {
+                                     SubscriptionRepository subscriptionRepository,
+                                     BillingService billingService) {
         this.tenantRegistryService = tenantRegistryService;
         this.customerRepository = customerRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.billingService = billingService;
     }
 
     public Set<Feature> getFeaturesForPlan(String plan) {
@@ -96,21 +100,22 @@ public class FeatureEntitlementService {
         TenantRecord tenant = tenantRegistryService.findBySchemaName(schema)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Tenant context not resolved"));
 
-        String plan = tenant.plan() != null ? tenant.plan() : "STARTER";
+        String plan = tenant.plan() != null ? tenant.plan() : PlanTier.FREE.name();
         String status = "ACTIVE";
 
         if (tenant.stripeCustomerId() != null && !tenant.stripeCustomerId().isBlank()) {
             Optional<Customer> customerOpt = customerRepository.findByStripeCustomerId(tenant.stripeCustomerId());
             if (customerOpt.isPresent()) {
-                Optional<Subscription> subscriptionOpt = subscriptionRepository.findByCustomerId(customerOpt.get().getId());
+                List<Subscription> subscriptions = subscriptionRepository.findByCustomerIdOrderByUpdatedAtDesc(customerOpt.get().getId());
+                Optional<Subscription> subscriptionOpt = billingService.findCurrentSubscription(subscriptions);
                 if (subscriptionOpt.isPresent()) {
                     Subscription subscription = subscriptionOpt.get();
                     if (subscription.getStatus() != null) {
                         status = subscription.getStatus().name();
                     }
-                    if (subscription.getPlanTier() != null && subscription.getStatus() != SubscriptionStatus.CANCELED) {
-                        plan = subscription.getPlanTier().name();
-                    }
+                    plan = billingService.resolveEffectivePlan(subscriptionOpt, tenant);
+                } else {
+                    plan = tenant.plan() != null ? tenant.plan() : PlanTier.FREE.name();
                 }
             }
         }

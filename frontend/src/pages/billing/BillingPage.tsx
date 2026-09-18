@@ -71,12 +71,18 @@ export const BillingPage: React.FC = () => {
       return;
     }
 
+    if (subscription && subscription.status !== 'CANCELED') {
+      showToast('info', 'Active Subscription Found', 'Opening Stripe Customer Portal to modify your plan.');
+      handleOpenPortal();
+      return;
+    }
+
     setIsUpgrading(planTier);
     try {
       const res = await billingApi.createCheckoutSession({ planTier });
       if (res.checkoutUrl) {
         showToast('info', 'Redirecting to Stripe Checkout...', 'Opening secure payment gateway');
-        window.location.href = res.checkoutUrl;
+        window.location.assign(res.checkoutUrl);
       } else {
         throw new Error('No checkout URL returned by billing service.');
       }
@@ -99,7 +105,7 @@ export const BillingPage: React.FC = () => {
       const res = await billingApi.createPortalSession();
       if (res.url) {
         showToast('info', 'Opening Customer Portal', 'Redirecting to Stripe portal');
-        window.location.href = res.url;
+        window.location.assign(res.url);
       } else {
         throw new Error('No portal session URL returned.');
       }

@@ -97,8 +97,10 @@ public class BillingService {
         }
 
         Customer customer = customerOpt.get();
+        List<com.yourco.saas.domain.billing.Subscription> subscriptions =
+                subscriptionRepository.findByCustomerIdOrderByUpdatedAtDesc(customer.getId());
         Optional<com.yourco.saas.domain.billing.Subscription> subscriptionOpt =
-                subscriptionRepository.findByCustomerId(customer.getId());
+                findCurrentSubscription(subscriptions);
         List<com.yourco.saas.domain.billing.Invoice> invoices =
                 invoiceRepository.findByCustomerId(customer.getId());
 
@@ -106,22 +108,155 @@ public class BillingService {
                 .map(SubscriptionResponse::from)
                 .orElse(null);
 
-        String plan;
-        if (subscriptionOpt.isPresent()
-                && subscriptionOpt.get().getPlanTier() != null
-                && subscriptionOpt.get().getStatus() != SubscriptionStatus.CANCELED) {
-            plan = subscriptionOpt.get().getPlanTier().name();
-        } else if (tenant.plan() != null) {
-            plan = tenant.plan();
-        } else {
-            plan = PlanTier.FREE.name();
-        }
+        String plan = resolveEffectivePlan(subscriptionOpt, tenant);
 
         List<InvoiceResponse> invoiceResponses = invoices.stream()
                 .map(InvoiceResponse::from)
                 .toList();
 
         return new BillingSummaryResponse(plan, subscriptionResponse, invoiceResponses);
+    }
+
+    public static boolean isEntitledStatus(SubscriptionStatus status) {
+        if (status == null) {
+            return false;
+        }
+        return switch (status) {
+            case ACTIVE, TRIALING, PAST_DUE -> true;
+            case PAUSED, UNPAID, INCOMPLETE, INCOMPLETE_EXPIRED, CANCELED -> false;
+        };
+    }
+
+    public static int compareRecency(com.yourco.saas.domain.billing.Subscription a,
+                                     com.yourco.saas.domain.billing.Subscription b) {
+        if (a == b) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+
+        if (a.getCurrentPeriodStart() != null && b.getCurrentPeriodStart() != null) {
+            int cmp = a.getCurrentPeriodStart().compareTo(b.getCurrentPeriodStart());
+            if (cmp != 0) return cmp;
+        } else if (a.getCurrentPeriodStart() != null) {
+            return 1;
+        } else if (b.getCurrentPeriodStart() != null) {
+            return -1;
+        }
+
+        if (a.getCreatedAt() != null && b.getCreatedAt() != null) {
+            int cmp = a.getCreatedAt().compareTo(b.getCreatedAt());
+            if (cmp != 0) return cmp;
+        } else if (a.getCreatedAt() != null) {
+            return 1;
+        } else if (b.getCreatedAt() != null) {
+            return -1;
+        }
+
+        if (a.getUpdatedAt() != null && b.getUpdatedAt() != null) {
+            int cmp = a.getUpdatedAt().compareTo(b.getUpdatedAt());
+            if (cmp != 0) return cmp;
+        } else if (a.getUpdatedAt() != null) {
+            return 1;
+        } else if (b.getUpdatedAt() != null) {
+            return -1;
+        }
+
+        if (a.getId() != null && b.getId() != null) {
+            return a.getId().compareTo(b.getId());
+        } else if (a.getId() != null) {
+            return 1;
+        } else if (b.getId() != null) {
+            return -1;
+        }
+
+        return 0;
+    }
+
+    public static Optional<com.yourco.saas.domain.billing.Subscription> findCurrentSubscription(
+            List<com.yourco.saas.domain.billing.Subscription> subscriptions) {
+        if (subscriptions == null || subscriptions.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<com.yourco.saas.domain.billing.Subscription> entitled = subscriptions.stream()
+                .filter(s -> isEntitledStatus(s.getStatus()))
+                .toList();
+
+        if (!entitled.isEmpty()) {
+            return entitled.stream().max(BillingService::compareRecency);
+        }
+
+        return subscriptions.stream().max(BillingService::compareRecency);
+    }
+
+    public Optional<com.yourco.saas.domain.billing.Subscription> findCurrentSubscription(Long customerId) {
+        if (customerId == null) {
+            return Optional.empty();
+        }
+        List<com.yourco.saas.domain.billing.Subscription> subscriptions =
+                subscriptionRepository.findByCustomerIdOrderByUpdatedAtDesc(customerId);
+        return findCurrentSubscription(subscriptions);
+    }
+
+    public boolean hasActiveSubscription(TenantRecord tenant) {
+        if (tenant == null || tenant.stripeCustomerId() == null || tenant.stripeCustomerId().isBlank()) {
+            return false;
+        }
+        return customerRepository.findByStripeCustomerId(tenant.stripeCustomerId())
+                .flatMap(customer -> findCurrentSubscription(customer.getId()))
+                .map(sub -> isEntitledStatus(sub.getStatus()))
+                .orElse(false);
+    }
+
+    public PlanTier resolveEffectivePlanTier(
+            Optional<com.yourco.saas.domain.billing.Subscription> currentSubscription,
+            TenantRecord tenant) {
+        if (currentSubscription != null && currentSubscription.isPresent()) {
+            com.yourco.saas.domain.billing.Subscription sub = currentSubscription.get();
+            if (isEntitledStatus(sub.getStatus()) && sub.getPlanTier() != null) {
+                return sub.getPlanTier();
+            }
+            return PlanTier.FREE;
+        }
+
+        if (tenant != null && tenant.plan() != null) {
+            try {
+                return PlanTier.valueOf(tenant.plan().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return PlanTier.FREE;
+    }
+
+    public String resolveEffectivePlan(
+            Optional<com.yourco.saas.domain.billing.Subscription> currentSubscription,
+            TenantRecord tenant) {
+        return resolveEffectivePlanTier(currentSubscription, tenant).name();
+    }
+
+    @Transactional
+    public void reconcileCustomerSubscriptions(Long customerId, String stripeCustomerId) {
+        if (customerId == null || stripeCustomerId == null || stripeCustomerId.isBlank()) {
+            return;
+        }
+
+        Optional<TenantRecord> tenantOpt = tenantRegistryService.findByStripeCustomerId(stripeCustomerId);
+        if (tenantOpt.isEmpty()) {
+            log.warn("Cannot reconcile subscriptions: no tenant found for Stripe customer {}", stripeCustomerId);
+            return;
+        }
+        TenantRecord tenant = tenantOpt.get();
+
+        List<com.yourco.saas.domain.billing.Subscription> subscriptions =
+                subscriptionRepository.findByCustomerIdOrderByUpdatedAtDesc(customerId);
+
+        Optional<com.yourco.saas.domain.billing.Subscription> currentSubOpt =
+                findCurrentSubscription(subscriptions);
+
+        PlanTier effectiveTier = resolveEffectivePlanTier(currentSubOpt, tenant);
+
+        log.info("Reconciled customer {} (tenant {}): effective plan is {}",
+                stripeCustomerId, tenant.tenantId(), effectiveTier);
+
+        tenantRegistryService.updatePlan(tenant.tenantId(), effectiveTier.name());
     }
 
     @Transactional
@@ -152,28 +287,32 @@ public class BillingService {
 
         // current_period_start/end and price live on the subscription item since Stripe's
         // 2025-03-31 "Basil" API version, not on the subscription itself.
-        List<SubscriptionItem> items = stripeSubscription.getItems().getData();
+        List<SubscriptionItem> items = stripeSubscription.getItems() != null && stripeSubscription.getItems().getData() != null
+                ? stripeSubscription.getItems().getData()
+                : List.of();
         if (!items.isEmpty()) {
             SubscriptionItem item = items.get(0);
-            subscription.setStripePriceId(item.getPrice().getId());
-            subscription.setCurrentPeriodStart(Instant.ofEpochSecond(item.getCurrentPeriodStart()));
-            subscription.setCurrentPeriodEnd(Instant.ofEpochSecond(item.getCurrentPeriodEnd()));
-
-            PlanTier tier = stripeProperties.getTierForPriceId(item.getPrice().getId())
-                    .orElse(null);
-            if (tier != null) {
-                subscription.setPlanTier(tier);
-            } else {
-                log.warn("No plan tier configured for Stripe price {} - check app.stripe.price-tiers", item.getPrice().getId());
+            if (item.getPrice() != null) {
+                subscription.setStripePriceId(item.getPrice().getId());
+                PlanTier tier = stripeProperties.getTierForPriceId(item.getPrice().getId())
+                        .orElse(null);
+                if (tier != null) {
+                    subscription.setPlanTier(tier);
+                } else {
+                    log.warn("No plan tier configured for Stripe price {} - check app.stripe.price-tiers", item.getPrice().getId());
+                }
+            }
+            if (item.getCurrentPeriodStart() != null) {
+                subscription.setCurrentPeriodStart(Instant.ofEpochSecond(item.getCurrentPeriodStart()));
+            }
+            if (item.getCurrentPeriodEnd() != null) {
+                subscription.setCurrentPeriodEnd(Instant.ofEpochSecond(item.getCurrentPeriodEnd()));
             }
         }
 
         subscriptionRepository.save(subscription);
 
-        if (subscription.getPlanTier() != null) {
-            tenantRegistryService.findByStripeCustomerId(stripeSubscription.getCustomer())
-                    .ifPresent(t -> tenantRegistryService.updatePlan(t.tenantId(), subscription.getPlanTier().name()));
-        }
+        reconcileCustomerSubscriptions(customer.getId(), stripeSubscription.getCustomer());
     }
 
     @Transactional
@@ -184,8 +323,14 @@ public class BillingService {
                     subscriptionRepository.save(subscription);
                 });
 
-        tenantRegistryService.findByStripeCustomerId(stripeSubscription.getCustomer())
-                .ifPresent(t -> tenantRegistryService.updatePlan(t.tenantId(), PlanTier.FREE.name()));
+        Customer customer = customerRepository.findByStripeCustomerId(stripeSubscription.getCustomer())
+                .orElse(null);
+        if (customer != null) {
+            reconcileCustomerSubscriptions(customer.getId(), stripeSubscription.getCustomer());
+        } else {
+            tenantRegistryService.findByStripeCustomerId(stripeSubscription.getCustomer())
+                    .ifPresent(t -> tenantRegistryService.updatePlan(t.tenantId(), PlanTier.FREE.name()));
+        }
     }
 
     @Transactional
