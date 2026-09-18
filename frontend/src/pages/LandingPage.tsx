@@ -17,14 +17,14 @@ export const LandingPage: React.FC = () => {
   useEffect(() => {
     // Document SEO
     const originalTitle = document.title;
-    document.title = 'SaaS Platform — Enterprise Workforce & Business Operations';
+    document.title = 'Nexa — Workforce & Operations';
 
     const metaDescription = document.querySelector('meta[name="description"]');
     const originalDescription = metaDescription?.getAttribute('content') || '';
     if (metaDescription) {
       metaDescription.setAttribute(
         'content',
-        'Manage your workforce, projects, time, schedules and business operations from one secure multi-tenant SaaS platform.'
+        'Manage your workforce, projects, time, workflows and operations from one secure workspace.'
       );
     }
 

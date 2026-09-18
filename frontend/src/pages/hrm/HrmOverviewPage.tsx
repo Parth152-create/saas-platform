@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -13,29 +13,49 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { MOCK_DEPARTMENTS, INITIAL_EMPLOYEES } from '../../mocks/mockHrmData';
+import { hrmApi } from '../../api/hrmApi';
+import type { DepartmentSummary, HrmStats } from '../../api/types';
 
 export const HrmOverviewPage: React.FC = () => {
+  const [departments, setDepartments] = useState<DepartmentSummary[]>(MOCK_DEPARTMENTS);
+  const [stats, setStats] = useState<HrmStats | null>(null);
+
+  useEffect(() => {
+    hrmApi.getDepartments().then((data) => {
+      if (data && data.length > 0) setDepartments(data);
+    }).catch(() => {});
+
+    hrmApi.getStats().then((data) => {
+      if (data) setStats(data);
+    }).catch(() => {});
+  }, []);
+
+  const totalEmp = stats ? stats.totalEmployees : INITIAL_EMPLOYEES.length;
+  const totalDepts = stats ? stats.totalDepartments : departments.length;
+  const avgAttn = stats ? `${stats.averageAttendance}%` : '96.8%';
+  const billable = stats ? `${stats.totalBillableHours}h Total Billable` : '164h Avg Monthly Billable';
+
   const modules = [
     {
       title: 'Employee Directory',
       path: '/app/hrm/employees',
       icon: Users,
       description: 'Manage staff profiles, organizational structure, positions, and active statuses.',
-      stat: `${INITIAL_EMPLOYEES.length} Active Profiles`,
+      stat: `${totalEmp} Profiles`,
     },
     {
       title: 'Teams & Departments',
       path: '/app/hrm/teams',
       icon: Building2,
       description: 'Department hierarchies, team leads, headcounts, and operational budgets.',
-      stat: `${MOCK_DEPARTMENTS.length} Departments`,
+      stat: `${totalDepts} Departments`,
     },
     {
       title: 'Attendance & Leave',
       path: '/app/hrm/attendance',
       icon: UserCheck,
       description: 'Absence request approvals, PTO allowances, sick leaves, and punch clock audit.',
-      stat: '96.8% Average Attendance',
+      stat: `${avgAttn} Avg Attendance`,
     },
     {
       title: 'Work Schedule Models',
@@ -49,7 +69,7 @@ export const HrmOverviewPage: React.FC = () => {
       path: '/app/hrm/time-tracking',
       icon: Clock,
       description: 'Daily work logs, overtime calculation, task time tracking, and productivity rates.',
-      stat: '164h Avg Monthly Billable',
+      stat: billable,
     },
     {
       title: 'Employee Documents',
@@ -133,7 +153,7 @@ export const HrmOverviewPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
-                {MOCK_DEPARTMENTS.map((dept) => (
+                {departments.map((dept) => (
                   <tr
                     key={dept.name}
                     className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
@@ -141,14 +161,14 @@ export const HrmOverviewPage: React.FC = () => {
                     <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100">
                       {dept.name}
                     </td>
-                    <td className="px-5 py-3.5">{dept.lead}</td>
+                    <td className="px-5 py-3.5">{dept.lead || 'Unassigned'}</td>
                     <td className="px-5 py-3.5 font-medium">{dept.headCount} members</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
                         <div className="w-24 bg-neutral-100 dark:bg-[#1f1f1f] h-2 rounded-full overflow-hidden">
                           <div
                             className="bg-neutral-950 dark:bg-white h-full rounded-full"
-                            style={{ width: `${dept.budgetUtilization}%` }}
+                            style={{ width: `${Math.min(dept.budgetUtilization, 100)}%` }}
                           />
                         </div>
                         <span className="font-semibold text-[11px] text-neutral-800 dark:text-neutral-200">{dept.budgetUtilization}%</span>

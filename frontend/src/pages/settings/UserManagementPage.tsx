@@ -1,34 +1,14 @@
-import React, { useState } from 'react';
-import { Check, Copy, KeyRound, Plus, UserPlus } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Check, Copy, KeyRound, Plus, RefreshCw, UserCheck, UserPlus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/common/Card';
 import { EmployeeInviteModal } from '../hrm/EmployeeInviteModal';
+import { usersApi } from '../../api/usersApi';
+import type { WorkspaceUser } from '../../api/types';
 import { formatDate } from '../../utils/formatters';
-
-interface LocalInviteRecord {
-  email: string;
-  role: string;
-  token: string;
-  createdAt: string;
-}
-
-const INITIAL_INVITATIONS: LocalInviteRecord[] = [
-  {
-    email: 'alex.morgan@company.com',
-    role: 'ADMIN',
-    token: 'e2a537f8-9a45-4dfc-8d13-c918349514f0',
-    createdAt: '2026-09-16T12:00:00.000Z',
-  },
-  {
-    email: 'sarah.connor@company.com',
-    role: 'MEMBER',
-    token: 'f941ab20-bc42-47d0-a043-41bbd9c19b02',
-    createdAt: '2026-09-15T12:00:00.000Z',
-  },
-];
 
 export const UserManagementPage: React.FC = () => {
   const { user } = useAuth();
@@ -36,19 +16,37 @@ export const UserManagementPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  // Local state holding tokens generated in this session
-  const [invitations, setInvitations] = useState<LocalInviteRecord[]>(INITIAL_INVITATIONS);
+  const [users, setUsers] = useState<WorkspaceUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleInviteSuccess = (token: string, email: string, role: string) => {
-    setInvitations((prev) => [
-      {
-        email,
-        role,
-        token,
-        createdAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+  const handleRefresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await usersApi.getUsers();
+      setUsers(data);
+    } catch {
+      // If error or non-admin preview
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    usersApi.getUsers()
+      .then((data) => {
+        if (isMounted && data) {
+          setUsers(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleInviteSuccess = () => {
+    handleRefresh();
   };
 
   const handleCopyLink = (token: string) => {
@@ -58,6 +56,9 @@ export const UserManagementPage: React.FC = () => {
     showToast('success', 'Invite URL Copied', 'Share this activation link with your teammate.');
     setTimeout(() => setCopiedToken(null), 2500);
   };
+
+  const activeUsers = users.filter((u) => u.status === 'ACTIVE');
+  const pendingInvites = users.filter((u) => u.status === 'INVITED');
 
   return (
     <div className="space-y-6">
@@ -69,16 +70,27 @@ export const UserManagementPage: React.FC = () => {
               <span>Workspace User Management & Invitations</span>
             </CardTitle>
             <p className="text-xs text-zinc-500 dark:text-neutral-400 mt-1">
-              Invite teammates using real backend endpoint <code className="text-zinc-900 dark:text-neutral-100 font-mono">POST /api/users</code>
+              Manage workspace teammates and issue onboarding invitation links via backend <code className="text-zinc-900 dark:text-neutral-100 font-mono">/api/users</code>
             </p>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setIsModalOpen(true)}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Invite New User
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              isLoading={isLoading}
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
+            >
+              Refresh
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setIsModalOpen(true)}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              Invite New User
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Current user card */}
@@ -104,64 +116,115 @@ export const UserManagementPage: React.FC = () => {
             </Badge>
           </div>
 
-          {/* Invitation relay table */}
+          {/* Active Workspace Members */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-3 flex items-center gap-1.5">
-              <KeyRound className="w-4 h-4" />
-              <span>Generated Invitation Tokens (7-Day Expiration)</span>
+              <UserCheck className="w-4 h-4" />
+              <span>Active Workspace Members ({activeUsers.length})</span>
             </h4>
             <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#262626]">
               <table className="w-full text-left text-xs text-neutral-600 dark:text-neutral-400">
                 <thead className="bg-neutral-50 text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:bg-[#141414] dark:text-neutral-500 border-b border-neutral-100 dark:border-[#262626]">
                   <tr>
-                    <th className="px-5 py-3">Invitee Email</th>
+                    <th className="px-5 py-3">Member Email</th>
                     <th className="px-5 py-3">Assigned Role</th>
-                    <th className="px-5 py-3">Created Date</th>
+                    <th className="px-5 py-3">Joined Date</th>
                     <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3 text-right">Relay Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
-                  {invitations.map((inv) => (
+                  {activeUsers.map((u) => (
                     <tr
-                      key={inv.token}
+                      key={u.id}
                       className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
                     >
                       <td className="px-5 py-3.5 font-medium text-neutral-900 dark:text-neutral-100">
-                        {inv.email}
+                        {u.email}
                       </td>
                       <td className="px-5 py-3.5">
                         <Badge variant="default" size="sm">
-                          {inv.role}
+                          {u.role}
                         </Badge>
                       </td>
-                      <td className="px-5 py-3.5">{formatDate(inv.createdAt)}</td>
+                      <td className="px-5 py-3.5">{formatDate(u.createdAt)}</td>
                       <td className="px-5 py-3.5">
-                        <Badge variant="warning" size="sm" withDot>
-                          Pending Activation
+                        <Badge variant="success" size="sm" withDot>
+                          Active
                         </Badge>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCopyLink(inv.token)}
-                          leftIcon={
-                            copiedToken === inv.token ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )
-                          }
-                        >
-                          {copiedToken === inv.token ? 'Copied URL' : 'Copy Invite URL'}
-                        </Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Pending Invitations table */}
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-3 flex items-center gap-1.5">
+              <KeyRound className="w-4 h-4" />
+              <span>Pending Invitations ({pendingInvites.length})</span>
+            </h4>
+            {pendingInvites.length === 0 ? (
+              <p className="text-xs text-neutral-500 italic p-4 border border-dashed border-neutral-200 dark:border-[#262626] rounded-xl text-center">
+                No pending invitations. Click &quot;Invite New User&quot; above to invite teammates.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#262626]">
+                <table className="w-full text-left text-xs text-neutral-600 dark:text-neutral-400">
+                  <thead className="bg-neutral-50 text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:bg-[#141414] dark:text-neutral-500 border-b border-neutral-100 dark:border-[#262626]">
+                    <tr>
+                      <th className="px-5 py-3">Invitee Email</th>
+                      <th className="px-5 py-3">Assigned Role</th>
+                      <th className="px-5 py-3">Created Date</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3 text-right">Relay Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
+                    {pendingInvites.map((inv) => (
+                      <tr
+                        key={inv.id}
+                        className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
+                      >
+                        <td className="px-5 py-3.5 font-medium text-neutral-900 dark:text-neutral-100">
+                          {inv.email}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <Badge variant="default" size="sm">
+                            {inv.role}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3.5">{formatDate(inv.createdAt)}</td>
+                        <td className="px-5 py-3.5">
+                          <Badge variant="warning" size="sm" withDot>
+                            Pending Activation
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          {inv.inviteToken && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCopyLink(inv.inviteToken!)}
+                              leftIcon={
+                                copiedToken === inv.inviteToken ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )
+                              }
+                            >
+                              {copiedToken === inv.inviteToken ? 'Copied URL' : 'Copy Invite URL'}
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -170,7 +233,7 @@ export const UserManagementPage: React.FC = () => {
       <EmployeeInviteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onInviteCreated={handleInviteSuccess}
+        onSuccess={handleInviteSuccess}
       />
     </div>
   );

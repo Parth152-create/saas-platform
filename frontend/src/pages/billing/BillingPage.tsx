@@ -264,7 +264,7 @@ export const BillingPage: React.FC = () => {
                     <span className="text-xs text-zinc-400"> / month</span>
                   </div>
                   <p className="text-xs text-neutral-500">
-                    Essential features for evaluating the SaaS multi-tenant architecture.
+                    Essential features for evaluating the Nexa multi-tenant platform.
                   </p>
                   <ul className="space-y-2 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-100 dark:border-[#262626] pt-4">
                     <li className="flex items-center gap-2">

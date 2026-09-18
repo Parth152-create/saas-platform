@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '../common/Button';
+import { NexaMark } from '../common/NexaLogo';
 
 export const FinalCTA: React.FC = () => {
   return (
@@ -12,6 +13,10 @@ export const FinalCTA: React.FC = () => {
           <div className="absolute inset-0 bg-radial from-neutral-800/20 via-transparent to-transparent pointer-events-none" />
 
           <div className="relative max-w-3xl mx-auto">
+            <div className="flex justify-center mb-5">
+              <NexaMark size={40} theme="dark" />
+            </div>
+
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase bg-neutral-800 text-neutral-200 border border-neutral-700 mb-6">
               <Sparkles className="w-3.5 h-3.5" />
               Unified Enterprise Workspace
@@ -27,23 +32,25 @@ export const FinalCTA: React.FC = () => {
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/signup">
+              <Link to="/signup" className="w-full sm:w-auto group">
                 <Button
                   variant="secondary"
                   size="lg"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                  rightIcon={
+                    <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+                  }
                   className="w-full sm:w-auto px-8"
                 >
-                  Get Started Free
+                  Get Started
                 </Button>
               </Link>
-              <Link to="/login">
+              <Link to="/login" className="w-full sm:w-auto">
                 <Button
                   variant="ghost"
                   size="lg"
                   className="w-full sm:w-auto text-neutral-300 hover:text-white hover:bg-neutral-900 border border-neutral-800"
                 >
-                  Log into existing workspace
+                  Log In
                 </Button>
               </Link>
             </div>

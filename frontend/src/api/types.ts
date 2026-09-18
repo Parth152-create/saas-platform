@@ -136,3 +136,54 @@ export interface ApiErrorResponse {
   path: string;
   details?: string[];
 }
+
+export type EmployeeStatus = 'ACTIVE' | 'ON_LEAVE' | 'INACTIVE' | 'PROBATION' | 'TERMINATED';
+
+export interface Employee {
+  id: string;
+  employeeId: string;
+  name: string;
+  email: string;
+  department: string;
+  position: string;
+  status: EmployeeStatus;
+  hireDate: string;
+  phone?: string;
+  workModel: string;
+  location?: string;
+  manager?: string;
+  avatarColor?: string;
+  attendanceRate: number;
+  billableHours: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DepartmentSummary {
+  id?: string;
+  name: string;
+  lead?: string;
+  budgetUtilization: number;
+  headCount: number;
+}
+
+export interface HrmStats {
+  totalEmployees: number;
+  activeEmployees: number;
+  onLeaveEmployees: number;
+  probationEmployees: number;
+  inactiveEmployees: number;
+  totalDepartments: number;
+  averageAttendance: number;
+  totalBillableHours: number;
+}
+
+export interface WorkspaceUser {
+  id: string;
+  email: string;
+  role: Role;
+  status: 'ACTIVE' | 'INVITED' | 'SUSPENDED';
+  inviteToken?: string;
+  inviteTokenExpiresAt?: string;
+  createdAt: string;
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/commo
 import { Tabs } from '../../components/common/Tabs';
 import { StatCard } from '../../components/widgets/StatCard';
 import { INITIAL_EMPLOYEES } from '../../mocks/mockHrmData';
+import { hrmApi } from '../../api/hrmApi';
+import type { Employee } from '../../api/types';
 import { useToast } from '../../context/ToastContext';
 import { formatDate } from '../../utils/formatters';
 
@@ -29,9 +31,30 @@ export const EmployeeProfilePage: React.FC = () => {
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [employee, setEmployee] = useState<Employee>(() => {
+    return INITIAL_EMPLOYEES.find((e) => e.id === id) || INITIAL_EMPLOYEES[0];
+  });
 
-  const employee =
-    INITIAL_EMPLOYEES.find((e) => e.id === id) || INITIAL_EMPLOYEES[0];
+  useEffect(() => {
+    if (!id) return;
+    let isMounted = true;
+    hrmApi.getEmployee(id)
+      .then((data) => {
+        if (isMounted && data) {
+          setEmployee(data);
+        }
+      })
+      .catch(() => {
+        // Fallback to local mock if UUID not in tenant db (e.g. static mock ID)
+        const fallback = INITIAL_EMPLOYEES.find((e) => e.id === id);
+        if (fallback && isMounted) {
+          setEmployee(fallback);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   const profileTabs = [
     { id: 'overview', label: 'Overview & Profile' },
@@ -168,7 +191,7 @@ export const EmployeeProfilePage: React.FC = () => {
             />
             <StatCard
               title="Manager / Lead"
-              value={employee.manager}
+              value={employee.manager || 'Unassigned'}
               icon={<Users className="w-5 h-5 text-neutral-900 dark:text-neutral-100" />}
               iconBgColor="bg-neutral-100 dark:bg-[#1f1f1f]"
             />

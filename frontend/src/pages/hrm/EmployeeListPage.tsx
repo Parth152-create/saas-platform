@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
@@ -9,6 +9,7 @@ import {
   Mail,
   Phone,
   Plus,
+  RefreshCw,
   Search,
   UserCheck,
   Users,
@@ -22,49 +23,84 @@ import { StatCard } from '../../components/widgets/StatCard';
 import { EmptyState } from '../../components/common/EmptyState';
 import { EmployeeInviteModal } from './EmployeeInviteModal';
 import { INITIAL_EMPLOYEES } from '../../mocks/mockHrmData';
+import { hrmApi } from '../../api/hrmApi';
+import type { Employee } from '../../api/types';
 import { useAuth } from '../../context/AuthContext';
 
 export const EmployeeListPage: React.FC = () => {
   const { hasRole } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [isLoading, setIsLoading] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedDept, setSelectedDept] = useState('ALL');
   const [activeTab, setActiveTab] = useState('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
+  const handleRefresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await hrmApi.getEmployees();
+      if (data && data.length > 0) {
+        setEmployees(data);
+      }
+    } catch {
+      // Fallback to initial seed if backend not reachable in preview
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    hrmApi.getEmployees()
+      .then((data) => {
+        if (isMounted && data && data.length > 0) {
+          setEmployees(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const statusTabs = [
-    { id: 'ALL', label: 'All Staff', count: INITIAL_EMPLOYEES.length },
+    { id: 'ALL', label: 'All Staff', count: employees.length },
     {
       id: 'ACTIVE',
       label: 'Active',
-      count: INITIAL_EMPLOYEES.filter((e) => e.status === 'ACTIVE').length,
+      count: employees.filter((e) => e.status === 'ACTIVE').length,
     },
     {
       id: 'ON_LEAVE',
       label: 'On Leave',
-      count: INITIAL_EMPLOYEES.filter((e) => e.status === 'ON_LEAVE').length,
+      count: employees.filter((e) => e.status === 'ON_LEAVE').length,
     },
     {
       id: 'PROBATION',
       label: 'Probation',
-      count: INITIAL_EMPLOYEES.filter((e) => e.status === 'PROBATION').length,
+      count: employees.filter((e) => e.status === 'PROBATION').length,
     },
     {
       id: 'INACTIVE',
       label: 'Inactive',
-      count: INITIAL_EMPLOYEES.filter((e) => e.status === 'INACTIVE').length,
+      count: employees.filter((e) => e.status === 'INACTIVE' || e.status === 'TERMINATED').length,
     },
   ];
 
   const departments = useMemo(() => {
-    const set = new Set(INITIAL_EMPLOYEES.map((e) => e.department));
+    const set = new Set(employees.map((e) => e.department));
     return ['ALL', ...Array.from(set)];
-  }, []);
+  }, [employees]);
 
   const filteredEmployees = useMemo(() => {
-    return INITIAL_EMPLOYEES.filter((emp) => {
+    return employees.filter((emp) => {
       const matchesSearch =
         searchQuery.trim() === '' ||
         emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -78,7 +114,7 @@ export const EmployeeListPage: React.FC = () => {
 
       return matchesSearch && matchesDept && matchesStatus;
     });
-  }, [searchQuery, selectedDept, activeTab]);
+  }, [employees, searchQuery, selectedDept, activeTab]);
 
   return (
     <div className="space-y-6">
@@ -86,14 +122,25 @@ export const EmployeeListPage: React.FC = () => {
         title="Employee Directory"
         description="Manage organizational staff, view employment status, and invite team members."
         actions={
-          hasRole('ADMIN') && (
+          <div className="flex items-center gap-2">
             <Button
-              onClick={() => setIsInviteModalOpen(true)}
-              leftIcon={<Plus className="w-4 h-4" />}
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              isLoading={isLoading}
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
             >
-              Invite Teammate
+              Refresh
             </Button>
-          )
+            {hasRole('ADMIN') && (
+              <Button
+                onClick={() => setIsInviteModalOpen(true)}
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                Invite Teammate
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -101,25 +148,25 @@ export const EmployeeListPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Staff"
-          value={INITIAL_EMPLOYEES.length}
+          value={employees.length}
           icon={<Users className="w-5 h-5 text-neutral-900 dark:text-neutral-100" />}
           iconBgColor="bg-neutral-100 dark:bg-[#1f1f1f]"
         />
         <StatCard
           title="Active Workforce"
-          value={INITIAL_EMPLOYEES.filter((e) => e.status === 'ACTIVE').length}
+          value={employees.filter((e) => e.status === 'ACTIVE').length}
           icon={<UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
           iconBgColor="bg-emerald-50 dark:bg-emerald-950/40"
         />
         <StatCard
           title="On Approved Leave"
-          value={INITIAL_EMPLOYEES.filter((e) => e.status === 'ON_LEAVE').length}
+          value={employees.filter((e) => e.status === 'ON_LEAVE').length}
           icon={<Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           iconBgColor="bg-amber-50 dark:bg-amber-950/40"
         />
         <StatCard
           title="Probation Period"
-          value={INITIAL_EMPLOYEES.filter((e) => e.status === 'PROBATION').length}
+          value={employees.filter((e) => e.status === 'PROBATION').length}
           icon={<Users className="w-5 h-5 text-neutral-900 dark:text-neutral-100" />}
           iconBgColor="bg-neutral-100 dark:bg-[#1f1f1f]"
         />
@@ -355,6 +402,7 @@ export const EmployeeListPage: React.FC = () => {
       <EmployeeInviteModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
+        onSuccess={handleRefresh}
       />
     </div>
   );

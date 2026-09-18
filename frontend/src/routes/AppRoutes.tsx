@@ -34,6 +34,7 @@ import { SystemSettingsPage } from '../pages/settings/SystemSettingsPage';
 import { LandingPage } from '../pages/LandingPage';
 import type { Role } from '../api/types';
 import { ShieldAlert } from 'lucide-react';
+import { NexaMark } from '../components/common/NexaLogo';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -45,9 +46,14 @@ const ProtectedRoute: React.FC<{
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-[#0a0a0a]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-950 dark:border-white border-t-transparent" />
-          <span className="text-xs text-neutral-500 font-medium">Loading session...</span>
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative flex items-center justify-center">
+            <NexaMark size={32} />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-neutral-900 dark:border-white border-t-transparent" />
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">Loading session...</span>
+          </div>
         </div>
       </div>
     );
@@ -180,6 +186,7 @@ export const AppRoutes: React.FC = () => {
         path="*"
         element={
           <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-neutral-50 dark:bg-[#0a0a0a]">
+            <NexaMark size={40} className="mb-4" />
             <h1 className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">404</h1>
             <p className="text-sm text-neutral-500 mb-6">Page not found in this workspace.</p>
             <Navigate to="/app/dashboard" />

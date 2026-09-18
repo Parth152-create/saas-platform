@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { GoogleButton } from '../../components/auth/GoogleButton';
+import { NexaMark } from '../../components/common/NexaLogo';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -139,15 +140,23 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-950 text-white dark:bg-white dark:text-[#0a0a0a] font-bold text-xl shadow-xs">
-            S
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-[#181818] border border-neutral-200/80 dark:border-[#262626] shadow-xs">
+            <NexaMark size={32} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
+            <h2 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+              Nexa
+            </h2>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500">
+              WORKFORCE &amp; OPERATIONS
+            </p>
+          </div>
+          <div className="pt-2 space-y-1">
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-              Login to Dashboard
+              Welcome back
             </h1>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Enter your workspace credentials to access your organization
+              Sign in to your workspace
             </p>
           </div>
         </div>

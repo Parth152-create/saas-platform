@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Nexa Geometric Mark -->
+  <!-- Left Pillar / Foundation Structure -->
+  <path
+    d="M5 12.5A1.5 1.5 0 0 1 6.5 11H8.25L17.1 28H6.5A1.5 1.5 0 0 1 5 26.5V12.5Z"
+    fill="currentColor"
+  />
+  <!-- Electric Blue Diagonal Workflow Connector -->
+  <path
+    d="M8.2 4H12.5L23.8 28H19.5L8.2 4Z"
+    fill="#2563EB"
+  />
+  <!-- Right Pillar / Operations Structure -->
+  <path
+    d="M27 19.5A1.5 1.5 0 0 1 25.5 21H23.75L14.9 4H25.5A1.5 1.5 0 0 1 27 5.5V19.5Z"
+    fill="currentColor"
+  />
+</svg>

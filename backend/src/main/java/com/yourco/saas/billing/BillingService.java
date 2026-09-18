@@ -159,9 +159,10 @@ public class BillingService {
             subscription.setCurrentPeriodStart(Instant.ofEpochSecond(item.getCurrentPeriodStart()));
             subscription.setCurrentPeriodEnd(Instant.ofEpochSecond(item.getCurrentPeriodEnd()));
 
-            String tier = stripeProperties.getPriceTiers().get(item.getPrice().getId());
+            PlanTier tier = stripeProperties.getTierForPriceId(item.getPrice().getId())
+                    .orElse(null);
             if (tier != null) {
-                subscription.setPlanTier(PlanTier.valueOf(tier));
+                subscription.setPlanTier(tier);
             } else {
                 log.warn("No plan tier configured for Stripe price {} - check app.stripe.price-tiers", item.getPrice().getId());
             }

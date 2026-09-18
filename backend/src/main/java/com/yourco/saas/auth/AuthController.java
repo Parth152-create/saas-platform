@@ -18,6 +18,8 @@ import com.yourco.saas.tenant.TenantOnboardingService;
 import com.yourco.saas.tenant.TenantRecord;
 import com.yourco.saas.tenant.TenantRegistryService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,6 +36,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final TenantRegistryService tenantRegistryService;
     private final TenantOnboardingService tenantOnboardingService;
@@ -149,13 +153,19 @@ public class AuthController {
         Jwt googleJwt;
         try {
             googleJwt = googleJwtDecoder.decode(request.idToken());
-        } catch (JwtException e) {
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid Google token provided: {}", e.getMessage());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google token");
+        } catch (Exception e) {
+            log.error("Error decoding Google token", e);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Failed to verify Google token: " + e.getMessage());
         }
 
         String email = googleJwt.getClaimAsString("email");
         String googleSubject = googleJwt.getSubject();
-        boolean emailVerified = Boolean.TRUE.equals(googleJwt.getClaim("email_verified"));
+        Object emailVerifiedClaim = googleJwt.getClaim("email_verified");
+        boolean emailVerified = Boolean.TRUE.equals(emailVerifiedClaim)
+                || "true".equalsIgnoreCase(String.valueOf(emailVerifiedClaim));
 
         if (email == null || !emailVerified) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Google account email not verified");

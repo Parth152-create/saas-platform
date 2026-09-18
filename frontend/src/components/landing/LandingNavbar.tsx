@@ -4,6 +4,7 @@ import { ArrowRight, Menu, Moon, Sun, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../common/Button';
+import { NexaLogo } from '../common/NexaLogo';
 
 export const LandingNavbar: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -38,18 +39,8 @@ export const LandingNavbar: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
-        <Link to="/" className="flex items-center gap-3 select-none">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-950 text-white dark:bg-white dark:text-[#0a0a0a] font-bold text-sm tracking-wide shadow-xs">
-            S
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-              SaaS Platform
-            </span>
-            <span className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium tracking-wide uppercase">
-              Enterprise HRM
-            </span>
-          </div>
+        <Link to="/" className="flex items-center select-none" aria-label="Nexa Home">
+          <NexaLogo variant="full" size="md" />
         </Link>
 
         {/* Desktop Nav Links */}

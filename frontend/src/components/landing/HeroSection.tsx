@@ -15,33 +15,39 @@ export const HeroSection: React.FC = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
         {/* Eyebrow badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-[#262626] bg-white/70 dark:bg-[#141414]/70 backdrop-blur-xs text-[11px] font-semibold tracking-wider uppercase text-neutral-700 dark:text-neutral-300 shadow-2xs">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          ENTERPRISE WORKFORCE & BUSINESS OPERATIONS
+          <span className="flex h-2 w-2 rounded-full bg-[#2563EB] animate-pulse" />
+          WORKFORCE &amp; OPERATIONS
         </div>
 
         {/* Hero Heading */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50 leading-[1.12] max-w-4xl mx-auto">
-          Run your entire organization from{' '}
+          Your organization,{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-500 dark:from-white dark:via-neutral-200 dark:to-neutral-400">
-            one intelligent workspace.
+            connected in one workspace.
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-base sm:text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed font-normal">
-          Manage people, projects, time, schedules, claims, and operations from one secure, schema-isolated multi-tenant platform.
+          Manage people, projects, time, workflows and operations from one secure workspace.
         </p>
 
         {/* Call to Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-          <Link to="/signup" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto px-7 text-sm font-semibold" rightIcon={<ArrowRight className="w-4 h-4" />}>
-              Get Started Free
+          <Link to="/signup" className="w-full sm:w-auto group">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto px-7 text-sm font-semibold"
+              rightIcon={
+                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+              }
+            >
+              Get Started
             </Button>
           </Link>
           <Link to="/login" className="w-full sm:w-auto">
             <Button variant="outline" size="lg" className="w-full sm:w-auto px-7 text-sm">
-              Login to Workspace
+              Log In
             </Button>
           </Link>
         </div>

@@ -36,6 +36,9 @@ public class SecurityConfig {
     private final JwtDecoder jwtDecoder;
     private final TenantRegistryService tenantRegistryService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:}")
+    private String additionalCorsOrigins;
+
     public SecurityConfig(JwtDecoder jwtDecoder, TenantRegistryService tenantRegistryService) {
         this.jwtDecoder = jwtDecoder;
         this.tenantRegistryService = tenantRegistryService;
@@ -71,6 +74,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/error").permitAll()
+            .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/metrics/**").permitAll()
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers("/api/webhooks/**").permitAll()
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
@@ -88,6 +92,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                         accessDeniedException, SecurityContextHolder.getContext().getAuthentication());
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
             }))
+        .addFilterBefore(new CorrelationIdFilter(), UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(
             new JwtAuthenticationFilter(jwtDecoder, tenantRegistryService),
             UsernamePasswordAuthenticationFilter.class);
@@ -97,9 +102,23 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        java.util.List<String> originPatterns = new java.util.ArrayList<>(java.util.List.of(
+                "http://localhost:[*]",
+                "http://127.0.0.1:[*]",
+                "http://localhost",
+                "http://127.0.0.1"
+        ));
+        if (additionalCorsOrigins != null && !additionalCorsOrigins.isBlank()) {
+            java.util.Arrays.stream(additionalCorsOrigins.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .forEach(originPatterns::add);
+        }
+        config.setAllowedOriginPatterns(originPatterns);
+        config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(java.util.List.of("*"));
+        config.setExposedHeaders(java.util.List.of("X-Request-ID"));
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

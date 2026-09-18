@@ -71,7 +71,7 @@ export const SecuritySection: React.FC = () => {
           <div className="max-w-3xl mx-auto flex flex-col items-center">
             {/* Top Node */}
             <div className="px-6 py-3 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold text-xs tracking-wide shadow-xs border border-neutral-800 dark:border-neutral-200">
-              SaaS Platform Engine
+              Nexa Platform Engine
             </div>
 
             {/* Vertical Connector */}

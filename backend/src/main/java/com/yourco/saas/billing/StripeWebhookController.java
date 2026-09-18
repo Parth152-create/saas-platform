@@ -141,8 +141,26 @@ public class StripeWebhookController {
                 log.info("Ignoring already-processed Stripe event {}", event.getId());
                 return ResponseEntity.ok("already processed");
             }
-            action.run();
-            processedWebhookEventRepository.save(new ProcessedWebhookEvent(event.getId(), event.getType()));
+
+            try {
+                processedWebhookEventRepository.saveAndFlush(new ProcessedWebhookEvent(event.getId(), event.getType()));
+            } catch (Exception e) {
+                log.info("Concurrent delivery detected: event {} already claimed/processed", event.getId());
+                return ResponseEntity.ok("already processed");
+            }
+
+            try {
+                action.run();
+            } catch (RuntimeException e) {
+                try {
+                    processedWebhookEventRepository.deleteById(event.getId());
+                    processedWebhookEventRepository.flush();
+                } catch (Exception cleanupEx) {
+                    log.warn("Failed to rollback webhook event claim on execution failure: {}", cleanupEx.getMessage());
+                }
+                throw e;
+            }
+
             return ResponseEntity.ok("ok");
         } finally {
             TenantContext.clear();

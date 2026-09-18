@@ -122,6 +122,43 @@ class BillingControllerTest extends IntegrationTestBase {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("https://checkout.stripe.com/test-session-url", response.getBody().checkoutUrl());
+
+        ArgumentCaptor<com.stripe.param.checkout.SessionCreateParams> paramsCaptor =
+                ArgumentCaptor.forClass(com.stripe.param.checkout.SessionCreateParams.class);
+        verify(checkoutSessionCreator).create(paramsCaptor.capture());
+        com.stripe.param.checkout.SessionCreateParams capturedParams = paramsCaptor.getValue();
+        assertNotNull(capturedParams.getLineItems());
+        assertEquals(1, capturedParams.getLineItems().size());
+        assertEquals("price_test_pro", capturedParams.getLineItems().get(0).getPrice());
+    }
+
+    @Test
+    void createsEnterpriseCheckoutSessionForAdmin() throws Exception {
+        TenantRecord tenant = provisionTenant("billing-checkout-ent");
+        String accessToken = loginAs(tenant, Role.ADMIN);
+
+        Session fakeSession = new Session();
+        fakeSession.setUrl("https://checkout.stripe.com/test-session-url-ent");
+        when(checkoutSessionCreator.create(ArgumentMatchers.any())).thenReturn(fakeSession);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        HttpEntity<CreateCheckoutSessionRequest> entity =
+                new HttpEntity<>(new CreateCheckoutSessionRequest(PlanTier.ENTERPRISE), headers);
+
+        ResponseEntity<CreateCheckoutSessionResponse> response = restTemplate.exchange(
+                "/api/billing/checkout-session", HttpMethod.POST, entity, CreateCheckoutSessionResponse.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("https://checkout.stripe.com/test-session-url-ent", response.getBody().checkoutUrl());
+
+        ArgumentCaptor<com.stripe.param.checkout.SessionCreateParams> paramsCaptor =
+                ArgumentCaptor.forClass(com.stripe.param.checkout.SessionCreateParams.class);
+        verify(checkoutSessionCreator, atLeastOnce()).create(paramsCaptor.capture());
+        com.stripe.param.checkout.SessionCreateParams capturedParams = paramsCaptor.getValue();
+        assertNotNull(capturedParams.getLineItems());
+        assertEquals(1, capturedParams.getLineItems().size());
+        assertEquals("price_test_enterprise", capturedParams.getLineItems().get(0).getPrice());
     }
 
     @Test

@@ -5,12 +5,14 @@ import com.yourco.saas.domain.user.User;
 import com.yourco.saas.domain.user.UserRepository;
 import com.yourco.saas.users.dto.InviteUserRequest;
 import com.yourco.saas.users.dto.InviteUserResponse;
+import com.yourco.saas.users.dto.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +32,23 @@ public class UserController {
 
     public UserController(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> listUsers() {
+        List<UserResponse> users = userRepository.findAll().stream()
+                .map(u -> new UserResponse(
+                        u.getId(),
+                        u.getEmail(),
+                        u.getRole(),
+                        u.getStatus(),
+                        u.getInviteToken(),
+                        u.getInviteTokenExpiresAt(),
+                        u.getCreatedAt()
+                ))
+                .toList();
+        return ResponseEntity.ok(users);
     }
 
     @PostMapping

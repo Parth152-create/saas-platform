@@ -27,7 +27,7 @@ export const ProductPreview: React.FC = () => {
             <span className="h-3 w-3 rounded-full bg-amber-400/80" />
             <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
             <span className="text-[11px] font-mono text-neutral-400 ml-2 hidden sm:inline">
-              app.saasplatform.internal/workspace/dashboard
+              app.nexa.internal/workspace/dashboard
             </span>
           </div>
           <div className="flex items-center gap-2">

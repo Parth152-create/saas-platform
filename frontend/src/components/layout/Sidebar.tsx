@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useEntitlements } from '../../context/EntitlementsContext';
 import type { Feature } from '../../api/types';
 import { Badge } from '../common/Badge';
+import { NexaMark } from '../common/NexaLogo';
 
 export interface SidebarProps {
   isCollapsed: boolean;
@@ -104,20 +105,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <NavLink
             to="/app/dashboard"
-            className="flex items-center gap-3 overflow-hidden"
-            title="SaaS Platform"
+            className={`flex items-center overflow-hidden ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+            title="Nexa"
           >
             {/* Logo is fixed size and strictly centered in compact mode so it is NEVER clipped */}
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-950 text-white dark:bg-white dark:text-[#0a0a0a] font-bold text-sm tracking-wide shadow-xs">
-              S
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 dark:bg-[#181818] border border-neutral-200/80 dark:border-[#262626] shadow-2xs">
+              <NexaMark size={22} />
             </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100 truncate">
-                  SaaS Platform
+                  Nexa
                 </span>
-                <span className="text-[10px] text-neutral-400 font-medium tracking-wide uppercase truncate">
-                  Enterprise HRM
+                <span className="text-[9.5px] text-neutral-400 font-semibold tracking-[0.14em] uppercase truncate">
+                  WORKFORCE &amp; OPERATIONS
                 </span>
               </div>
             )}

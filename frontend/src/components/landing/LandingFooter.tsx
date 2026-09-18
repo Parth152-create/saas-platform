@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { NexaLogo } from '../common/NexaLogo';
 
 export const LandingFooter: React.FC = () => {
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -12,21 +13,11 @@ export const LandingFooter: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Col */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-3 select-none">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-950 text-white dark:bg-white dark:text-[#0a0a0a] font-bold text-sm">
-                S
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  SaaS Platform
-                </span>
-                <span className="text-[10px] text-neutral-500 font-medium tracking-wide uppercase">
-                  Enterprise Workforce &amp; HRM
-                </span>
-              </div>
+            <Link to="/" className="flex items-center select-none" aria-label="Nexa Home">
+              <NexaLogo variant="full" size="md" />
             </Link>
             <p className="mt-4 text-xs leading-relaxed max-w-sm text-neutral-500 dark:text-neutral-400">
-              A modern, multi-tenant workforce management platform. Built on schema-per-tenant
+              An enterprise workforce and business operations platform. Built on schema-per-tenant
               PostgreSQL isolation, cryptographic JWT authorization, and Stripe billing.
             </p>
             <div className="mt-6">
@@ -129,7 +120,7 @@ export const LandingFooter: React.FC = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-neutral-200/80 dark:border-[#262626] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 dark:text-neutral-400">
           <div>
-            &copy; 2026 SaaS Platform. All rights reserved. Built with schema-per-tenant isolation.
+            &copy; 2026 Nexa. All rights reserved. Built with schema-per-tenant isolation.
           </div>
           <div className="flex items-center gap-6">
             <span className="text-[11px] font-mono">v1.0.0-PROD</span>

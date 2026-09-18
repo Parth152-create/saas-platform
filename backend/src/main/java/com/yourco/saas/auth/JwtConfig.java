@@ -10,7 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.*;
 
 import java.util.List;
@@ -46,11 +49,27 @@ public class JwtConfig {
                 .withJwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
                 .build();
 
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer("https://accounts.google.com");
-        OAuth2TokenValidator<Jwt> withAudience = new JwtClaimValidator<List<String>>(
-                "aud", aud -> aud != null && aud.contains(googleClientId));
+        OAuth2TokenValidator<Jwt> timestampValidator = new JwtTimestampValidator();
 
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, withAudience));
+        OAuth2TokenValidator<Jwt> withIssuer = token -> {
+            Object iss = token.getClaims().get("iss");
+            if ("https://accounts.google.com".equals(iss) || "accounts.google.com".equals(iss)) {
+                return OAuth2TokenValidatorResult.success();
+            }
+            return OAuth2TokenValidatorResult.failure(
+                    new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, "Invalid issuer: " + iss, null));
+        };
+
+        OAuth2TokenValidator<Jwt> withAudience = token -> {
+            List<String> audience = token.getAudience();
+            if (audience != null && audience.contains(googleClientId)) {
+                return OAuth2TokenValidatorResult.success();
+            }
+            return OAuth2TokenValidatorResult.failure(
+                    new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, "The aud claim does not contain expected client ID", null));
+        };
+
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(timestampValidator, withIssuer, withAudience));
         return decoder;
     }
 }
