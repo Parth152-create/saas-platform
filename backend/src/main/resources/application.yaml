@@ -31,7 +31,7 @@ management:
         include: "health,info,metrics"
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when-authorized}
       probes:
         enabled: true
 
@@ -43,21 +43,47 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
   jwt:
-    public-key: classpath:certs/jwt-public.pem
-    private-key: classpath:certs/jwt-private.pem
-    access-token-ttl: 15m
-    refresh-token-ttl: 7d
+    public-key: ${JWT_PUBLIC_KEY:classpath:certs/jwt-public.pem}
+    private-key: ${JWT_PRIVATE_KEY:classpath:certs/jwt-private.pem}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:7d}
+
+  email:
+    enabled: ${EMAIL_ENABLED:true}
+    provider: ${EMAIL_PROVIDER:log}
+    from-address: ${EMAIL_FROM_ADDRESS:noreply@nexa.app}
+    from-name: ${EMAIL_FROM_NAME:Nexa Platform}
+    smtp:
+      host: ${SMTP_HOST:localhost}
+      port: ${SMTP_PORT:587}
+      username: ${SMTP_USERNAME:}
+      password: ${SMTP_PASSWORD:}
+      auth: ${SMTP_AUTH:false}
+      starttls: ${SMTP_STARTTLS:false}
+
+  storage:
+    provider: ${STORAGE_PROVIDER:memory}
+    base-path: ${STORAGE_BASE_PATH:/tmp/nexa-storage}
+    max-file-size-bytes: ${STORAGE_MAX_FILE_SIZE_BYTES:10485760}
+
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    auth-requests-per-minute: ${RATE_LIMIT_AUTH_PER_MIN:60}
+    api-requests-per-minute: ${RATE_LIMIT_API_PER_MIN:300}
 
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-
     checkout-success-url: ${STRIPE_CHECKOUT_SUCCESS_URL:http://localhost:5173/billing/success?session_id={CHECKOUT_SESSION_ID}}
     checkout-cancel-url: ${STRIPE_CHECKOUT_CANCEL_URL:http://localhost:5173/billing/cancel}
     portal-return-url: ${STRIPE_PORTAL_RETURN_URL:http://localhost:5173/billing}
-
     price-tiers:
       pro-price-id: ${STRIPE_PRICE_PRO_ID:}
       enterprise-price-id: ${STRIPE_PRICE_ENTERPRISE_ID:}
+
 server:
-  port: 8090
+  port: ${PORT_BACKEND:8090}
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-exception: false

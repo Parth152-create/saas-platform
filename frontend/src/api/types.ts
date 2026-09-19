@@ -135,6 +135,7 @@ export interface ApiErrorResponse {
   message: string;
   path: string;
   details?: string[];
+  requestId?: string;
 }
 
 export type EmployeeStatus = 'ACTIVE' | 'ON_LEAVE' | 'INACTIVE' | 'PROBATION' | 'TERMINATED';
@@ -178,11 +179,15 @@ export interface HrmStats {
   totalBillableHours: number;
 }
 
+export interface ChangeRoleRequest {
+  role: Role;
+}
+
 export interface WorkspaceUser {
   id: string;
   email: string;
   role: Role;
-  status: 'ACTIVE' | 'INVITED' | 'SUSPENDED';
+  status: 'ACTIVE' | 'INVITED' | 'DISABLED' | 'SUSPENDED';
   inviteToken?: string;
   inviteTokenExpiresAt?: string;
   createdAt: string;

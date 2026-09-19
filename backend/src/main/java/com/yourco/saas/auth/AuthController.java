@@ -3,6 +3,7 @@ package com.yourco.saas.auth;
 import com.yourco.saas.auth.dto.AcceptInviteRequest;
 import com.yourco.saas.auth.dto.GoogleLoginRequest;
 import com.yourco.saas.auth.dto.LoginRequest;
+import com.yourco.saas.auth.dto.LogoutRequest;
 import com.yourco.saas.auth.dto.RefreshRequest;
 import com.yourco.saas.auth.dto.SignupRequest;
 import com.yourco.saas.auth.dto.TokenResponse;
@@ -242,5 +243,35 @@ public class AuthController {
         } finally {
             TenantContext.clear();
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody @Valid LogoutRequest request) {
+        try {
+            Jwt jwt = jwtDecoder.decode(request.refreshToken());
+            String jti = jwt.getId();
+            if (jti != null) {
+                jwtService.revokeRefreshToken(jti);
+            }
+            String tenantId = jwt.getClaimAsString("tenant_id");
+            if (tenantId != null) {
+                tenantRegistryService.findByTenantId(tenantId)
+                        .filter(t -> "ACTIVE".equals(t.status()))
+                        .ifPresent(tenant -> {
+                            TenantContext.setTenant(tenant.schemaName());
+                            try {
+                                UUID userId = UUID.fromString(jwt.getSubject());
+                                auditLogRepository.save(new AuditLog(
+                                        userId, "USER", "USER_LOGOUT", "SUCCESS", null));
+                            } catch (Exception ignored) {
+                            } finally {
+                                TenantContext.clear();
+                            }
+                        });
+            }
+        } catch (JwtException e) {
+            log.debug("Logout called with expired or invalid refresh token: {}", e.getMessage());
+        }
+        return ResponseEntity.ok().build();
     }
 }

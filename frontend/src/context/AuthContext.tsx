@@ -140,6 +140,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = (): void => {
+    const refreshToken = getStoredRefreshToken();
+    if (refreshToken) {
+      authApi.logout(refreshToken).catch(() => {
+        // Safe: even if network is offline or token already revoked, local session clears cleanly
+      });
+    }
     clearAuthSession();
     setUser(null);
     setAccessToken(null);

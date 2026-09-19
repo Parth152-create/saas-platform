@@ -35,6 +35,7 @@ import { LandingPage } from '../pages/LandingPage';
 import type { Role } from '../api/types';
 import { ShieldAlert } from 'lucide-react';
 import { NexaMark } from '../components/common/NexaLogo';
+import { Button } from '../components/common/Button';
 
 const ProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -65,7 +66,7 @@ const ProtectedRoute: React.FC<{
 
   if (requiredRole && !hasRole(requiredRole)) {
     return (
-      <div className="p-8 max-w-lg mx-auto text-center space-y-4">
+      <div className="p-8 max-w-lg mx-auto text-center space-y-4 pt-20">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400 mx-auto">
           <ShieldAlert className="w-6 h-6" />
         </div>
@@ -75,7 +76,11 @@ const ProtectedRoute: React.FC<{
         <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
           Your active workspace role is not authorized to view this page. Contact your organization administrator if you believe this is an error.
         </p>
-        <Navigate to="/app/dashboard" />
+        <div className="pt-2">
+          <Button size="sm" onClick={() => window.location.assign('/app/dashboard')}>
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
     );
   }
@@ -189,7 +194,9 @@ export const AppRoutes: React.FC = () => {
             <NexaMark size={40} className="mb-4" />
             <h1 className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">404</h1>
             <p className="text-sm text-neutral-500 mb-6">Page not found in this workspace.</p>
-            <Navigate to="/app/dashboard" />
+            <Button size="sm" onClick={() => window.location.assign('/app/dashboard')}>
+              Return to Dashboard
+            </Button>
           </div>
         }
       />

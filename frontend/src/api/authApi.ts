@@ -23,4 +23,7 @@ export const authApi = {
 
   acceptInvite: (req: AcceptInviteRequest): Promise<TokenResponse> =>
     apiClient.post<TokenResponse>('/api/auth/accept-invite', req),
+
+  logout: (refreshToken: string): Promise<void> =>
+    apiClient.post<void>('/api/auth/logout', { refreshToken }),
 };

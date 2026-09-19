@@ -67,14 +67,16 @@ export class ApiError extends Error {
   error: string;
   details?: string[];
   path?: string;
+  requestId?: string;
 
-  constructor(status: number, error: string, message: string, details?: string[], path?: string) {
+  constructor(status: number, error: string, message: string, details?: string[], path?: string, requestId?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.error = error;
     this.details = details;
     this.path = path;
+    this.requestId = requestId;
   }
 }
 
@@ -191,12 +193,15 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
       errorData.message ||
       (errorData.details && errorData.details.length > 0 ? errorData.details.join(', ') : response.statusText);
 
+    const requestId = errorData.requestId || response.headers.get('X-Request-ID') || undefined;
+
     throw new ApiError(
       response.status,
       errorData.error || response.statusText,
       message || `HTTP ${response.status} ${response.statusText}`,
       errorData.details,
-      errorData.path
+      errorData.path,
+      requestId
     );
   }
 
@@ -223,6 +228,13 @@ export const apiClient = {
     request<T>(endpoint, {
       ...options,
       method: 'PUT',
+      body: body ? JSON.stringify(body) : undefined,
+    }),
+
+  patch: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
+    request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     }),
 

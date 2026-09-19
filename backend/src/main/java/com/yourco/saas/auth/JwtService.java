@@ -48,6 +48,11 @@ public class JwtService {
 
         redisTemplate.opsForValue().set(
                 "refresh:" + refreshJti, user.getId().toString(), props.getRefreshTokenTtl());
+        try {
+            redisTemplate.opsForSet().add("user_refresh:" + user.getId(), refreshJti);
+            redisTemplate.expire("user_refresh:" + user.getId(), props.getRefreshTokenTtl());
+        } catch (Exception ignored) {
+        }
 
         return new TokenPair(accessToken, refreshToken, props.getAccessTokenTtl().toSeconds());
     }
@@ -57,7 +62,47 @@ public class JwtService {
     }
 
     public void revokeRefreshToken(String jti) {
+        try {
+            String userId = redisTemplate.opsForValue().get("refresh:" + jti);
+            if (userId != null) {
+                redisTemplate.opsForSet().remove("user_refresh:" + userId, jti);
+            }
+        } catch (Exception ignored) {
+        }
         redisTemplate.delete("refresh:" + jti);
+    }
+
+    public void revokeUserRefreshTokens(UUID userId) {
+        if (userId == null) return;
+        try {
+            String userKey = "user_refresh:" + userId;
+            java.util.Set<String> jtis = redisTemplate.opsForSet().members(userKey);
+            if (jtis != null && !jtis.isEmpty()) {
+                for (String jti : jtis) {
+                    redisTemplate.delete("refresh:" + jti);
+                }
+            }
+            redisTemplate.delete(userKey);
+        } catch (Exception ignored) {
+        }
+    }
+
+    public void markUserDisabled(UUID userId) {
+        if (userId == null) return;
+        revokeUserRefreshTokens(userId);
+        try {
+            redisTemplate.opsForValue().set("user_disabled:" + userId, "true", props.getRefreshTokenTtl());
+        } catch (Exception ignored) {
+        }
+    }
+
+    public boolean isUserDisabled(UUID userId) {
+        if (userId == null) return false;
+        try {
+            return Boolean.TRUE.equals(redisTemplate.hasKey("user_disabled:" + userId));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String encode(JwtClaimsSet claims) {

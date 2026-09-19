@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -26,10 +27,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtDecoder jwtDecoder;
     private final TenantRegistryService tenantRegistryService;
+    private final JwtService jwtService;
 
     public JwtAuthenticationFilter(JwtDecoder jwtDecoder, TenantRegistryService tenantRegistryService) {
+        this(jwtDecoder, tenantRegistryService, null);
+    }
+
+    public JwtAuthenticationFilter(JwtDecoder jwtDecoder,
+                                  TenantRegistryService tenantRegistryService,
+                                  JwtService jwtService) {
         this.jwtDecoder = jwtDecoder;
         this.tenantRegistryService = tenantRegistryService;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -62,9 +71,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Jwt jwt = jwtDecoder.decode(token);
 
             String tenantId = jwt.getClaimAsString("tenant_id");
-            if (tenantId != null) {
-                tenantRegistryService.findByTenantId(tenantId)
-                        .ifPresent(t -> TenantContext.setTenant(t.schemaName()));
+            if (tenantId == null || tenantId.isBlank()) {
+                log.warn("JWT rejected: missing tenant_id claim");
+                SecurityContextHolder.clearContext();
+                return;
+            }
+
+            var tenantOpt = tenantRegistryService.findByTenantId(tenantId);
+            if (tenantOpt.isEmpty() || !"ACTIVE".equalsIgnoreCase(tenantOpt.get().status())) {
+                log.warn("JWT rejected: tenant '{}' not found or not active", tenantId);
+                SecurityContextHolder.clearContext();
+                return;
+            }
+
+            TenantContext.setTenant(tenantOpt.get().schemaName());
+
+            String subject = jwt.getSubject();
+            if (subject != null && jwtService != null) {
+                try {
+                    UUID userId = UUID.fromString(subject);
+                    if (jwtService.isUserDisabled(userId)) {
+                        log.warn("JWT rejected: user '{}' is disabled", userId);
+                        SecurityContextHolder.clearContext();
+                        return;
+                    }
+                } catch (IllegalArgumentException ignored) {
+                }
             }
 
             String role = jwt.getClaimAsString("role");
