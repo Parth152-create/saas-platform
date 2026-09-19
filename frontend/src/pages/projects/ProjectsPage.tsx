@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Card, CardContent } from '../../components/common/Card';
+import { EmptyState } from '../../components/common/EmptyState';
 import { MOCK_PROJECTS } from '../../mocks/mockHrmData';
 import { formatDate } from '../../utils/formatters';
 import { useToast } from '../../context/ToastContext';
@@ -62,48 +63,63 @@ export const ProjectsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
-                {filtered.map((proj) => (
-                  <tr
-                    key={proj.id}
-                    className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
-                  >
-                    <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-                      <FolderKanban className="w-4 h-4 text-neutral-900 dark:text-neutral-100 shrink-0" />
-                      <span>{proj.name}</span>
-                    </td>
-                    <td className="px-5 py-3.5">{proj.client}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-neutral-100 dark:bg-[#1f1f1f] h-2 rounded-full overflow-hidden">
-                          <div
-                            className="bg-neutral-950 dark:bg-white h-full rounded-full"
-                            style={{ width: `${proj.progress}%` }}
-                          />
-                        </div>
-                        <span className="font-semibold text-[11px] text-neutral-800 dark:text-neutral-200">{proj.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">{formatDate(proj.dueDate)}</td>
-                    <td className="px-5 py-3.5 font-mono font-medium text-zinc-900 dark:text-neutral-100">
-                      {proj.budget}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge
-                        variant={
-                          proj.status === 'Delivered'
-                            ? 'success'
-                            : proj.status === 'On Track'
-                            ? 'default'
-                            : 'primary'
-                        }
-                        size="sm"
-                        withDot
-                      >
-                        {proj.status}
-                      </Badge>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center">
+                      <EmptyState
+                        icon={<FolderKanban className="w-6 h-6" />}
+                        title={search ? "No projects match your search" : "No active projects"}
+                        description={search ? "Try searching with different keywords." : "Create your first project to track milestones and deliverables."}
+                        actionLabel={search ? "Clear Search" : "New Project"}
+                        onAction={search ? () => setSearch('') : () => showToast('info', 'New Project', 'Create project modal dialog')}
+                        className="border-0 rounded-none bg-transparent"
+                      />
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((proj) => (
+                    <tr
+                      key={proj.id}
+                      className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
+                    >
+                      <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                        <FolderKanban className="w-4 h-4 text-neutral-900 dark:text-neutral-100 shrink-0" />
+                        <span>{proj.name}</span>
+                      </td>
+                      <td className="px-5 py-3.5">{proj.client}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-neutral-100 dark:bg-[#1f1f1f] h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-neutral-950 dark:bg-white h-full rounded-full"
+                              style={{ width: `${proj.progress}%` }}
+                            />
+                          </div>
+                          <span className="font-semibold text-[11px] text-neutral-800 dark:text-neutral-200">{proj.progress}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">{formatDate(proj.dueDate)}</td>
+                      <td className="px-5 py-3.5 font-mono font-medium text-zinc-900 dark:text-neutral-100">
+                        {proj.budget}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Badge
+                          variant={
+                            proj.status === 'Delivered'
+                              ? 'success'
+                              : proj.status === 'On Track'
+                              ? 'default'
+                              : 'primary'
+                          }
+                          size="sm"
+                          withDot
+                        >
+                          {proj.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

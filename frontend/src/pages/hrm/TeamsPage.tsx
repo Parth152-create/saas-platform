@@ -7,6 +7,7 @@ import { Badge } from '../../components/common/Badge';
 import { Card } from '../../components/common/Card';
 import { Modal } from '../../components/common/Modal';
 import { Input } from '../../components/common/Input';
+import { EmptyState } from '../../components/common/EmptyState';
 import { MOCK_DEPARTMENTS } from '../../mocks/mockHrmData';
 import { hrmApi } from '../../api/hrmApi';
 import type { DepartmentSummary } from '../../api/types';
@@ -33,7 +34,7 @@ export const TeamsPage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await hrmApi.getDepartments();
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setDepartments(data);
       }
     } catch {
@@ -47,7 +48,7 @@ export const TeamsPage: React.FC = () => {
     let isMounted = true;
     hrmApi.getDepartments()
       .then((data) => {
-        if (isMounted && data && data.length > 0) {
+        if (isMounted && Array.isArray(data)) {
           setDepartments(data);
         }
       })
@@ -118,52 +119,62 @@ export const TeamsPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {departments.map((dept) => (
-          <Card key={dept.name} hoverEffect className="p-6 flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 rounded-xl bg-neutral-100 text-neutral-900 dark:bg-[#1f1f1f] dark:text-neutral-100">
-                  <Building2 className="w-5 h-5" />
+      {departments.length === 0 ? (
+        <EmptyState
+          icon={<Building2 className="w-6 h-6" />}
+          title="No departments found"
+          description="Establish your first department to organize your workforce and assign team leads."
+          actionLabel={hasRole('ADMIN') ? "Create Department" : undefined}
+          onAction={hasRole('ADMIN') ? () => setIsModalOpen(true) : undefined}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {departments.map((dept) => (
+            <Card key={dept.name} hoverEffect className="p-6 flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 rounded-xl bg-neutral-100 text-neutral-900 dark:bg-[#1f1f1f] dark:text-neutral-100">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <Badge variant="primary" size="sm">
+                    {dept.headCount} Staff
+                  </Badge>
                 </div>
-                <Badge variant="primary" size="sm">
-                  {dept.headCount} Staff
-                </Badge>
+                <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+                  {dept.name}
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                  Department Lead: <strong className="text-neutral-800 dark:text-neutral-200">{dept.lead || 'Unassigned'}</strong>
+                </p>
               </div>
-              <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-                {dept.name}
-              </h3>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Department Lead: <strong className="text-neutral-800 dark:text-neutral-200">{dept.lead || 'Unassigned'}</strong>
-              </p>
-            </div>
 
-            <div className="space-y-2 pt-3 border-t border-neutral-100 dark:border-[#262626]">
-              <div className="flex justify-between text-xs">
-                <span className="text-neutral-500">Budget Utilization</span>
-                <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                  {dept.budgetUtilization}%
-                </span>
+              <div className="space-y-2 pt-3 border-t border-neutral-100 dark:border-[#262626]">
+                <div className="flex justify-between text-xs">
+                  <span className="text-neutral-500">Budget Utilization</span>
+                  <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                    {dept.budgetUtilization}%
+                  </span>
+                </div>
+                <div className="w-full bg-neutral-100 dark:bg-[#1f1f1f] h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-neutral-900 dark:bg-white h-full rounded-full"
+                    style={{ width: `${Math.min(dept.budgetUtilization, 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-neutral-100 dark:bg-[#1f1f1f] h-2 rounded-full overflow-hidden">
-                <div
-                  className="bg-neutral-900 dark:bg-white h-full rounded-full"
-                  style={{ width: `${Math.min(dept.budgetUtilization, 100)}%` }}
-                />
-              </div>
-            </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => navigate(`/app/hrm/employees?department=${encodeURIComponent(dept.name)}`)}
-            >
-              View Team Members
-            </Button>
-          </Card>
-        ))}
-      </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => navigate(`/app/hrm/employees?department=${encodeURIComponent(dept.name)}`)}
+              >
+                View Team Members
+              </Button>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Create Department Modal */}
       <Modal

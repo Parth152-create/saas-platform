@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/common/Card';
+import { EmptyState } from '../../components/common/EmptyState';
 import { StatCard } from '../../components/widgets/StatCard';
 import { MOCK_CLAIMS, type ClaimItem } from '../../mocks/mockHrmData';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -77,63 +78,78 @@ export const ClaimsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
-                {claims.map((claim) => (
-                  <tr
-                    key={claim.id}
-                    className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
-                  >
-                    <td className="px-5 py-3.5 font-mono font-semibold text-neutral-900 dark:text-neutral-100">
-                      {claim.claimNumber}
-                    </td>
-                    <td className="px-5 py-3.5 font-medium text-neutral-900 dark:text-neutral-100">
-                      {claim.claimant}
-                    </td>
-                    <td className="px-5 py-3.5">{claim.category}</td>
-                    <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100">
-                      {formatCurrency(claim.amount * 100)}
-                    </td>
-                    <td className="px-5 py-3.5">{formatDate(claim.dateFiled)}</td>
-                    <td className="px-5 py-3.5">
-                      <Badge
-                        variant={
-                          claim.status === 'Approved'
-                            ? 'success'
-                            : claim.status === 'Under Review'
-                            ? 'warning'
-                            : 'info'
-                        }
-                        size="sm"
-                        withDot
-                      >
-                        {claim.status}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      {claim.status !== 'Approved' && claim.status !== 'Rejected' ? (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAction(claim.id, 'Approved')}
-                            className="border-emerald-300 text-emerald-700 dark:text-emerald-400"
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAction(claim.id, 'Rejected')}
-                            className="border-red-300 text-red-700 dark:text-red-400"
-                          >
-                            Reject
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-zinc-400">Processed</span>
-                      )}
+                {claims.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center">
+                      <EmptyState
+                        icon={<FileStack className="w-6 h-6" />}
+                        title="No claims filed yet"
+                        description="No reimbursement or expense requests are currently active in this workspace."
+                        actionLabel="File New Claim"
+                        onAction={() => showToast('info', 'File Claim', 'New expense claim dialog')}
+                        className="border-0 rounded-none bg-transparent"
+                      />
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  claims.map((claim) => (
+                    <tr
+                      key={claim.id}
+                      className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
+                    >
+                      <td className="px-5 py-3.5 font-mono font-semibold text-neutral-900 dark:text-neutral-100">
+                        {claim.claimNumber}
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-neutral-900 dark:text-neutral-100">
+                        {claim.claimant}
+                      </td>
+                      <td className="px-5 py-3.5">{claim.category}</td>
+                      <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100">
+                        {formatCurrency(claim.amount * 100)}
+                      </td>
+                      <td className="px-5 py-3.5">{formatDate(claim.dateFiled)}</td>
+                      <td className="px-5 py-3.5">
+                        <Badge
+                          variant={
+                            claim.status === 'Approved'
+                              ? 'success'
+                              : claim.status === 'Under Review'
+                              ? 'warning'
+                              : 'info'
+                          }
+                          size="sm"
+                          withDot
+                        >
+                          {claim.status}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        {claim.status !== 'Approved' && claim.status !== 'Rejected' ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAction(claim.id, 'Approved')}
+                              className="border-emerald-300 text-emerald-700 dark:text-emerald-400"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAction(claim.id, 'Rejected')}
+                              className="border-red-300 text-red-700 dark:text-red-400"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-zinc-400">Processed</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

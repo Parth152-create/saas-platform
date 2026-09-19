@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/common/Card';
+import { EmptyState } from '../../components/common/EmptyState';
 import { StatCard } from '../../components/widgets/StatCard';
 import { MOCK_ABSENCE_TYPES } from '../../mocks/mockHrmData';
 import { useToast } from '../../context/ToastContext';
@@ -117,60 +118,75 @@ export const AttendanceLeavePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
-                {leaveRequests.map((req) => (
-                  <tr
-                    key={req.id}
-                    className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
-                  >
-                    <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100">
-                      {req.employee}
-                    </td>
-                    <td className="px-5 py-3.5 font-medium">{req.type}</td>
-                    <td className="px-5 py-3.5">{req.dates}</td>
-                    <td className="px-5 py-3.5 text-neutral-500 italic">{req.reason}</td>
-                    <td className="px-5 py-3.5">
-                      <Badge
-                        variant={
-                          req.status === 'APPROVED'
-                            ? 'success'
-                            : req.status === 'PENDING'
-                            ? 'warning'
-                            : 'danger'
-                        }
-                        size="sm"
-                        withDot
-                      >
-                        {req.status}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      {req.status === 'PENDING' ? (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDecision(req.id, 'APPROVED')}
-                            leftIcon={<Check className="w-3.5 h-3.5 text-emerald-600" />}
-                            className="text-emerald-700 dark:text-emerald-300 border-emerald-300"
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDecision(req.id, 'REJECTED')}
-                            leftIcon={<X className="w-3.5 h-3.5 text-red-600" />}
-                            className="text-red-700 dark:text-red-300 border-red-300"
-                          >
-                            Reject
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-neutral-400 font-medium">Decided</span>
-                      )}
+                {leaveRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center">
+                      <EmptyState
+                        icon={<Calendar className="w-6 h-6" />}
+                        title="No leave requests pending or recorded"
+                        description="Your team is currently all present with no upcoming time-off scheduled."
+                        actionLabel="Submit Leave Request"
+                        onAction={() => showToast('info', 'Request Leave', 'Time-off submission dialog opened')}
+                        className="border-0 rounded-none bg-transparent"
+                      />
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  leaveRequests.map((req) => (
+                    <tr
+                      key={req.id}
+                      className="hover:bg-neutral-50/50 dark:hover:bg-[#1a1a1a] transition-colors"
+                    >
+                      <td className="px-5 py-3.5 font-semibold text-neutral-900 dark:text-neutral-100">
+                        {req.employee}
+                      </td>
+                      <td className="px-5 py-3.5 font-medium">{req.type}</td>
+                      <td className="px-5 py-3.5">{req.dates}</td>
+                      <td className="px-5 py-3.5 text-neutral-500 italic">{req.reason}</td>
+                      <td className="px-5 py-3.5">
+                        <Badge
+                          variant={
+                            req.status === 'APPROVED'
+                              ? 'success'
+                              : req.status === 'PENDING'
+                              ? 'warning'
+                              : 'danger'
+                          }
+                          size="sm"
+                          withDot
+                        >
+                          {req.status}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        {req.status === 'PENDING' ? (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDecision(req.id, 'APPROVED')}
+                              leftIcon={<Check className="w-3.5 h-3.5 text-emerald-600" />}
+                              className="text-emerald-700 dark:text-emerald-300 border-emerald-300"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDecision(req.id, 'REJECTED')}
+                              leftIcon={<X className="w-3.5 h-3.5 text-red-600" />}
+                              className="text-red-700 dark:text-red-300 border-red-300"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-neutral-400 font-medium">Decided</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

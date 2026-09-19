@@ -43,7 +43,7 @@ export const EmployeeListPage: React.FC = () => {
     setIsLoading(true);
     try {
       const data = await hrmApi.getEmployees();
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setEmployees(data);
       }
     } catch {
@@ -57,7 +57,7 @@ export const EmployeeListPage: React.FC = () => {
     let isMounted = true;
     hrmApi.getEmployees()
       .then((data) => {
-        if (isMounted && data && data.length > 0) {
+        if (isMounted && Array.isArray(data)) {
           setEmployees(data);
         }
       })

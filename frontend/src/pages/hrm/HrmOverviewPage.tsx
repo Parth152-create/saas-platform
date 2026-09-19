@@ -22,7 +22,7 @@ export const HrmOverviewPage: React.FC = () => {
 
   useEffect(() => {
     hrmApi.getDepartments().then((data) => {
-      if (data && data.length > 0) setDepartments(data);
+      if (Array.isArray(data)) setDepartments(data);
     }).catch(() => {});
 
     hrmApi.getStats().then((data) => {
