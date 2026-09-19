@@ -17,6 +17,7 @@ Nexa is an enterprise-grade, multi-tenant workforce and operations SaaS platform
 ## Table of Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Key Features](#key-features)
 - [Architecture](#architecture)
 - [Multi-Tenancy](#multi-tenancy)
@@ -37,7 +38,6 @@ Nexa is an enterprise-grade, multi-tenant workforce and operations SaaS platform
 - [Deployment](#deployment)
 - [Production Considerations](#production-considerations)
 - [Troubleshooting & Operational Runbook](#troubleshooting--operational-runbook)
-- [Screenshots](#screenshots)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -57,6 +57,47 @@ Modern organizations require segregated operational boundaries without sacrifici
   - **Operations & Reporting:** Departmental budget utilization, report tiers (Basic, Advanced, Analytics, Custom Workflows), and administrative data exports.
   - **Identity & Security:** Dual authentication (Local BCrypt + Google OIDC), RS256 asymmetric JWT issuance, Redis-backed single-use refresh token rotation, and non-bypassable Role-Based Access Control (RBAC).
   - **Self-Service Billing:** Server-side Stripe Checkout, Stripe Customer Portal integration, transactional webhook ingestion, and deterministic subscription reconciliation.
+
+---
+
+## Screenshots
+
+Visual walkthrough of Nexa across its core operational interfaces:
+
+| Module | Description | Preview |
+|---|---|---|
+| **[Workspace Dashboard](#workspace-dashboard)** | Operational metrics, attendance rates, headcount, and recent audit activity | [Jump to preview ↓](#workspace-dashboard) |
+| **[Public SaaS Landing Page](#public-saas-landing-page)** | Public overview, value proposition, and self-service tier selection | [Jump to preview ↓](#public-saas-landing-page) |
+| **[HRM & Employee Directory](#hrm--employee-directory)** | Comprehensive personnel records, departmental filters, and status badges | [Jump to preview ↓](#hrm--employee-directory) |
+| **[Subscription & Billing Management](#subscription--billing-management)** | Stripe-backed tier subscriptions, portal redirects, and invoice history | [Jump to preview ↓](#subscription--billing-management) |
+
+---
+
+### Workspace Dashboard
+Executive operational dashboard tracking active headcount, attendance percentages, billable hours, department breakdown, and recent audit events.
+
+![Nexa Workspace Dashboard](docs/screenshots/dashboard.png)
+
+---
+
+### Public SaaS Landing Page
+Public-facing SaaS marketing and onboarding page highlighting core features, tenant security model, and self-service subscription tiers (Starter, Professional, Enterprise).
+
+![Nexa Public Landing Page](docs/screenshots/landing.png)
+
+---
+
+### HRM & Employee Directory
+Centralized workforce directory featuring real-time department filtering, employee lifecycle status badges, manager reporting structures, and work model tracking (Remote, Hybrid, On-Site).
+
+![Nexa HRM Employee Directory](docs/screenshots/hrm.png)
+
+---
+
+### Subscription & Billing Management
+Self-service billing dashboard with active plan entitlements, Stripe Checkout upgrade flows, Stripe Customer Portal management, and synchronized invoice histories.
+
+![Nexa Subscription & Billing Management](docs/screenshots/billing.png)
 
 ---
 
@@ -258,7 +299,7 @@ SUPER_ADMIN
 
 #### Privilege Escalation Prevention
 In `UserController.java`, invitations sent to `POST /api/users` enforce business-level authorization checks:
-```java
+```
 if (request.role() == Role.SUPER_ADMIN && !isSuperAdmin()) {
     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only SUPER_ADMIN can invite SUPER_ADMIN users");
 }
@@ -845,19 +886,6 @@ Prior to deploying Nexa in a production environment, ensure the following checkl
 ### 5. Port Conflict on Host
 - **Symptom:** `Bind for 0.0.0.0:5434 failed: port is already allocated`.
 - **Resolution:** Override port mappings in your `.env` file (e.g. `PORT_POSTGRES=5435`, `PORT_REDIS=6381`, `PORT_BACKEND=8091`).
-
----
-
-## Screenshots
-
-*Note: Visual application captures can be referenced here. To add screenshots, place assets in `docs/screenshots/` and link them below:*
-
-| View | Description | Location |
-|---|---|---|
-| **Landing Page** | Public SaaS overview, pricing, and feature tiers | `docs/screenshots/landing.png` |
-| **Workspace Dashboard** | Personnel metrics, attendance rates, activity feed | `docs/screenshots/dashboard.png` |
-| **HRM Employee Directory** | Workforce management, department filters, status badges | `docs/screenshots/hrm.png` |
-| **Billing Self-Service** | Subscription status, Stripe portal redirect, invoice history | `docs/screenshots/billing.png` |
 
 ---
 
