@@ -13,5 +13,8 @@ export const usersApi = {
 
   deactivateUser: (userId: string): Promise<WorkspaceUser> =>
     apiClient.delete<WorkspaceUser>(`/api/users/${userId}`),
+
+  reactivateUser: (userId: string): Promise<WorkspaceUser> =>
+    apiClient.post<WorkspaceUser>(`/api/users/${userId}/reactivate`),
 };
 

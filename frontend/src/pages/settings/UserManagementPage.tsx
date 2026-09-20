@@ -57,6 +57,23 @@ const canManageUser = (
   return false;
 };
 
+const canReactivateUser = (
+  currentUserRole: Role | undefined,
+  currentUserId: string | undefined,
+  targetUser: WorkspaceUser
+): boolean => {
+  if (!currentUserRole || !currentUserId) return false;
+  if (targetUser.id === currentUserId) return false;
+  if (targetUser.role === 'SUPER_ADMIN') return false;
+  if (targetUser.status !== 'DISABLED') return false;
+
+  if (currentUserRole === 'SUPER_ADMIN') return true;
+  if (currentUserRole === 'ADMIN') {
+    return targetUser.role === 'USER' || targetUser.role === 'MANAGER';
+  }
+  return false;
+};
+
 export const UserManagementPage: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -70,6 +87,7 @@ export const UserManagementPage: React.FC = () => {
   const [roleModalUser, setRoleModalUser] = useState<WorkspaceUser | null>(null);
   const [selectedNewRole, setSelectedNewRole] = useState<Role | ''>('');
   const [deactivateModalUser, setDeactivateModalUser] = useState<WorkspaceUser | null>(null);
+  const [reactivateModalUser, setReactivateModalUser] = useState<WorkspaceUser | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleRefresh = useCallback(async () => {
@@ -158,6 +176,29 @@ export const UserManagementPage: React.FC = () => {
           ? err.message
           : 'Failed to deactivate user. Check permissions and try again.';
       showToast('error', 'Deactivation Failed', errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmReactivate = async () => {
+    if (!reactivateModalUser) return;
+    setIsSubmitting(true);
+    try {
+      await usersApi.reactivateUser(reactivateModalUser.id);
+      showToast(
+        'success',
+        'User Reactivated',
+        `${reactivateModalUser.email} has been reactivated and can now sign in.`
+      );
+      setReactivateModalUser(null);
+      handleRefresh();
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Failed to reactivate user. Check permissions and try again.';
+      showToast('error', 'Reactivation Failed', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -401,6 +442,7 @@ export const UserManagementPage: React.FC = () => {
                       <th className="px-5 py-3">Previous Role</th>
                       <th className="px-5 py-3">Joined Date</th>
                       <th className="px-5 py-3">Account Status</th>
+                      <th className="px-5 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-[#262626]">
@@ -422,6 +464,21 @@ export const UserManagementPage: React.FC = () => {
                           <Badge variant="danger" size="sm" withDot>
                             Deactivated
                           </Badge>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          {canReactivateUser(user?.role, user?.id, u) ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              onClick={() => setReactivateModalUser(u)}
+                              leftIcon={<UserCheck className="w-3.5 h-3.5" />}
+                            >
+                              Reactivate
+                            </Button>
+                          ) : (
+                            <span className="text-neutral-400 text-[11px]">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -550,6 +607,49 @@ export const UserManagementPage: React.FC = () => {
               <p>
                 All past tasks, leave requests, audit logs, and HRM records linked to this member will be safely retained in the workspace.
               </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Reactivate User Confirmation Modal */}
+      {reactivateModalUser && (
+        <Modal
+          isOpen={!!reactivateModalUser}
+          onClose={() => !isSubmitting && setReactivateModalUser(null)}
+          title="Reactivate Workspace Member"
+          description={`Restore account access and permissions for ${reactivateModalUser.email}`}
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReactivateModalUser(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                onClick={handleConfirmReactivate}
+                isLoading={isSubmitting}
+              >
+                Reactivate Member
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20 p-3.5 flex items-start gap-3">
+              <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <div className="space-y-1 text-xs text-emerald-800 dark:text-emerald-300">
+                <p className="font-semibold">Account Access Will Be Restored</p>
+                <p>
+                  <strong>{reactivateModalUser.email}</strong> will be marked as Active and will be permitted to log in to the workspace as <strong>{reactivateModalUser.role}</strong>.
+                </p>
+              </div>
             </div>
           </div>
         </Modal>

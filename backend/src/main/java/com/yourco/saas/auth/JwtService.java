@@ -105,6 +105,14 @@ public class JwtService {
         }
     }
 
+    public void markUserEnabled(UUID userId) {
+        if (userId == null) return;
+        try {
+            redisTemplate.delete("user_disabled:" + userId);
+        } catch (Exception ignored) {
+        }
+    }
+
     private String encode(JwtClaimsSet claims) {
         JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).build();
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

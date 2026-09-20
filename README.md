@@ -1037,6 +1037,10 @@ Prior to deploying Nexa in a production environment, ensure the following checkl
 - **Symptom:** `SecurityException: Cross-tenant subscription forbidden`.
 - **Resolution:** Verify that frontend topic subscriptions target the authenticated tenant prefix (`/topic/tenant/{tenantId}/...`). The backend channel interceptor automatically rejects any attempt to subscribe to destinations belonging to other tenant schemas.
 
+### 8. Database Backup & Restore Operations
+- **Symptom:** Operational need to create a complete database snapshot (including `public.tenant_registry` and all `tenant_*` schemas) or restore from an archive.
+- **Resolution:** Use `./scripts/db-backup.sh` to generate a custom-format dump (`backups/nexa_<db>_<timestamp>.dump`). To restore safely, run `./scripts/db-restore.sh <dump_file> [--confirm]`. For full runbook details on pool sizing, Redis persistence, and CORS, see [OPERATIONAL_RUNBOOK.md](docs/OPERATIONAL_RUNBOOK.md).
+
 ---
 
 ## Roadmap

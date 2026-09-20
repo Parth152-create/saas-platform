@@ -491,4 +491,116 @@ class UserManagementHardeningTest extends IntegrationTestBase {
             TenantContext.clear();
         }
     }
+
+    // =========================================================================
+    // 5. User Reactivation Tests
+    // =========================================================================
+
+    @Test
+    void adminCanReactivateDeactivatedUserAndAuditLogRecorded() {
+        TenantRecord tenant = provisionTenant("reactivate-success");
+        TestUserSession admin = createAndLoginUser(tenant, "admin", Role.ADMIN);
+        TestUserSession target = createAndLoginUser(tenant, "target", Role.USER);
+
+        // Deactivate first
+        ResponseEntity<UserResponse> deactRes = restTemplate.exchange(
+                "/api/users/" + target.user().getId(),
+                HttpMethod.DELETE,
+                new HttpEntity<>(authHeaders(admin.tokens().accessToken())),
+                UserResponse.class
+        );
+        assertEquals(HttpStatus.OK, deactRes.getStatusCode());
+        assertEquals(UserStatus.DISABLED, deactRes.getBody().status());
+
+        // Now reactivate
+        ResponseEntity<UserResponse> reactRes = restTemplate.exchange(
+                "/api/users/" + target.user().getId() + "/reactivate",
+                HttpMethod.POST,
+                new HttpEntity<>(authHeaders(admin.tokens().accessToken())),
+                UserResponse.class
+        );
+        assertEquals(HttpStatus.OK, reactRes.getStatusCode());
+        assertNotNull(reactRes.getBody());
+        assertEquals(UserStatus.ACTIVE, reactRes.getBody().status());
+
+        // Verify status in DB
+        TenantContext.setTenant(tenant.schemaName());
+        try {
+            User restored = userRepository.findById(target.user().getId()).orElseThrow();
+            assertEquals(UserStatus.ACTIVE, restored.getStatus());
+
+            // Verify audit log
+            List<AuditLog> logs = auditLogRepository.findAll();
+            boolean foundReactivate = logs.stream().anyMatch(l ->
+                    "USER_REACTIVATE".equals(l.getAction()) &&
+                    "SUCCESS".equals(l.getOutcome()) &&
+                    admin.user().getId().equals(l.getActorId()) &&
+                    l.getDetails().contains("target_user=" + target.user().getId())
+            );
+            assertTrue(foundReactivate, "Audit log for USER_REACTIVATE must be recorded with actor details");
+        } finally {
+            TenantContext.clear();
+        }
+
+        // Verify reactivated user can login successfully
+        ResponseEntity<TokenResponse> loginRes = restTemplate.postForEntity(
+                "/api/auth/login",
+                new LoginRequest(tenant.tenantId(), target.user().getEmail(), "password123"),
+                TokenResponse.class
+        );
+        assertEquals(HttpStatus.OK, loginRes.getStatusCode());
+        assertNotNull(loginRes.getBody().accessToken());
+    }
+
+    @Test
+    void regularUserAndManagerCannotReactivateUser() {
+        TenantRecord tenant = provisionTenant("reactivate-rbac");
+        TestUserSession admin = createAndLoginUser(tenant, "admin", Role.ADMIN);
+        TestUserSession manager = createAndLoginUser(tenant, "manager", Role.MANAGER);
+        TestUserSession user = createAndLoginUser(tenant, "user", Role.USER);
+        TestUserSession target = createAndLoginUser(tenant, "target", Role.USER);
+
+        // Deactivate via admin
+        restTemplate.exchange(
+                "/api/users/" + target.user().getId(),
+                HttpMethod.DELETE,
+                new HttpEntity<>(authHeaders(admin.tokens().accessToken())),
+                UserResponse.class
+        );
+
+        // USER role cannot reactivate (403)
+        ResponseEntity<String> userAttempt = restTemplate.exchange(
+                "/api/users/" + target.user().getId() + "/reactivate",
+                HttpMethod.POST,
+                new HttpEntity<>(authHeaders(user.tokens().accessToken())),
+                String.class
+        );
+        assertEquals(HttpStatus.FORBIDDEN, userAttempt.getStatusCode());
+
+        // MANAGER role cannot reactivate (403)
+        ResponseEntity<String> managerAttempt = restTemplate.exchange(
+                "/api/users/" + target.user().getId() + "/reactivate",
+                HttpMethod.POST,
+                new HttpEntity<>(authHeaders(manager.tokens().accessToken())),
+                String.class
+        );
+        assertEquals(HttpStatus.FORBIDDEN, managerAttempt.getStatusCode());
+    }
+
+    @Test
+    void cannotReactivateActiveUser() {
+        TenantRecord tenant = provisionTenant("reactivate-active");
+        TestUserSession admin = createAndLoginUser(tenant, "admin", Role.ADMIN);
+        TestUserSession target = createAndLoginUser(tenant, "target", Role.USER);
+
+        // Target is already active
+        ResponseEntity<String> res = restTemplate.exchange(
+                "/api/users/" + target.user().getId() + "/reactivate",
+                HttpMethod.POST,
+                new HttpEntity<>(authHeaders(admin.tokens().accessToken())),
+                String.class
+        );
+        assertEquals(HttpStatus.BAD_REQUEST, res.getStatusCode());
+    }
 }
+

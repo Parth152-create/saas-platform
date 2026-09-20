@@ -170,8 +170,21 @@ public class SecurityConfig {
         }
         config.setAllowedOriginPatterns(originPatterns);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("X-Request-ID"));
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With",
+                "X-Request-ID",
+                "X-Correlation-ID",
+                "X-Tenant-ID",
+                "Idempotency-Key",
+                "Cache-Control",
+                "If-Match",
+                "If-None-Match"
+        ));
+        config.setExposedHeaders(List.of("X-Request-ID", "X-Correlation-ID"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

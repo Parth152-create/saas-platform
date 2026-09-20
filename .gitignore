@@ -303,3 +303,7 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/java,maven,node,intellij,vscode
 backend/src/main/resources/certs/jwt-private.pem
 .DS_Store
+backups/
+*.dump
+*.sql.gz
+

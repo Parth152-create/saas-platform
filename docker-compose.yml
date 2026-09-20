@@ -17,6 +17,7 @@ services:
 
   redis:
     image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "${PORT_REDIS:-6380}:6379"
     volumes:
@@ -53,6 +54,7 @@ services:
       STRIPE_PRICE_ENTERPRISE_ID: ${STRIPE_PRICE_ENTERPRISE_ID:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-906646436149-dkke9514rgicekhqsglpavm8e5iffgug.apps.googleusercontent.com}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      WEBSOCKET_ALLOWED_ORIGINS: ${WEBSOCKET_ALLOWED_ORIGINS:-}
       EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-log}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-noreply@nexa.app}

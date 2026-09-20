@@ -56,4 +56,18 @@ class ActuatorAndObservabilityTest extends IntegrationTestBase {
         assertNotNull(response.getBody());
         assertTrue(response.getBody().contains("names"), "Metrics endpoint should list available metric names");
     }
+
+    @Test
+    void sensitiveActuatorEndpointsAreNotPubliclyAccessible() {
+        ResponseEntity<String> envResponse = restTemplate.getForEntity("/actuator/env", String.class);
+        assertTrue(envResponse.getStatusCode() == HttpStatus.UNAUTHORIZED ||
+                   envResponse.getStatusCode() == HttpStatus.NOT_FOUND ||
+                   envResponse.getStatusCode() == HttpStatus.FORBIDDEN);
+
+        ResponseEntity<String> beansResponse = restTemplate.getForEntity("/actuator/beans", String.class);
+        assertTrue(beansResponse.getStatusCode() == HttpStatus.UNAUTHORIZED ||
+                   beansResponse.getStatusCode() == HttpStatus.NOT_FOUND ||
+                   beansResponse.getStatusCode() == HttpStatus.FORBIDDEN);
+    }
 }
+

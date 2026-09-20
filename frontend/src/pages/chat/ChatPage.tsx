@@ -62,6 +62,13 @@ export const ChatPage: React.FC = () => {
 
   // Mobile view state
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    wsManager.connect();
+    const unsub = wsManager.onConnectionChange(setIsConnected);
+    return () => unsub();
+  }, []);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -536,6 +543,20 @@ export const ChatPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Live Connection Status Indicator */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border border-neutral-200 dark:border-[#262626] bg-neutral-50/80 dark:bg-[#161616] shrink-0">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isConnected
+                      ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]'
+                      : 'bg-amber-500 animate-pulse'
+                  }`}
+                />
+                <span className="text-neutral-600 dark:text-neutral-400">
+                  {isConnected ? 'Live' : 'Connecting...'}
+                </span>
               </div>
             </div>
 

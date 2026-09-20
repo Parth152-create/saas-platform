@@ -116,6 +116,12 @@ public class UserController {
         return ResponseEntity.ok(userService.deactivateUser(userId));
     }
 
+    @PostMapping("/{userId}/reactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> reactivateUser(@PathVariable UUID userId) {
+        return ResponseEntity.ok(userService.reactivateUser(userId));
+    }
+
     private boolean isSuperAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth != null && auth.getAuthorities().stream()

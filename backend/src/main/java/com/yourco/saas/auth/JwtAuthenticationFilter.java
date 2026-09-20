@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -55,6 +56,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
+            MDC.remove("tenantId");
+            MDC.remove("userId");
         }
     }
 
@@ -85,6 +88,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             TenantContext.setTenant(tenantOpt.get().schemaName());
+            MDC.put("tenantId", tenantId);
+            if (jwt.getSubject() != null) {
+                MDC.put("userId", jwt.getSubject());
+            }
 
             String subject = jwt.getSubject();
             if (subject != null && jwtService != null) {

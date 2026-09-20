@@ -134,6 +134,43 @@ public class UserService {
         return toUserResponse(saved);
     }
 
+    @Transactional
+    public UserResponse reactivateUser(UUID targetUserId) {
+        UUID actorId = currentActorId();
+        Role actorRole = currentActorRole();
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found in tenant"));
+
+        if (targetUser.getStatus() != UserStatus.DISABLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not deactivated");
+        }
+
+        if (targetUser.getRole() == Role.SUPER_ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPER_ADMIN users cannot be modified through user reactivation");
+        }
+
+        if (targetUser.getRole() == Role.ADMIN && actorRole != Role.SUPER_ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only SUPER_ADMIN can reactivate ADMIN users");
+        }
+
+        if (actorRole != Role.ADMIN && actorRole != Role.SUPER_ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions to reactivate users");
+        }
+
+        targetUser.setStatus(UserStatus.ACTIVE);
+        User saved = userRepository.save(targetUser);
+
+        // Clear disabled session state in Redis
+        jwtService.markUserEnabled(targetUserId);
+
+        // Audit log
+        String details = String.format("target_user=%s, email=%s", targetUserId, targetUser.getEmail());
+        auditLogRepository.save(new AuditLog(actorId, actorRole.name(), "USER_REACTIVATE", "SUCCESS", details));
+
+        return toUserResponse(saved);
+    }
+
     private UserResponse toUserResponse(User u) {
         return new UserResponse(
                 u.getId(),
