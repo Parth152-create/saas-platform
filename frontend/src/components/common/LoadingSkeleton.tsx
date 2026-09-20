@@ -38,3 +38,20 @@ export const SkeletonTable: React.FC<{ rows?: number }> = ({ rows = 5 }) => (
     </div>
   </div>
 );
+
+export interface LoadingSkeletonProps {
+  variant?: 'card' | 'table' | 'text';
+  rows?: number;
+  className?: string;
+}
+
+export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ variant = 'card', rows = 5, className = '' }) => {
+  if (variant === 'table') {
+    return <SkeletonTable rows={rows} />;
+  }
+  if (variant === 'card') {
+    return <SkeletonCard />;
+  }
+  return <Skeleton className={className} />;
+};
+

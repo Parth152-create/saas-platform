@@ -7,6 +7,7 @@ import { SignupPage } from '../pages/auth/SignupPage';
 import { AcceptInvitePage } from '../pages/auth/AcceptInvitePage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { ProjectsPage } from '../pages/projects/ProjectsPage';
+import { ProjectDetailPage } from '../pages/projects/ProjectDetailPage';
 import { ClaimsPage } from '../pages/claims/ClaimsPage';
 import { TasksPage } from '../pages/tasks/TasksPage';
 import { SchedulePage } from '../pages/schedule/SchedulePage';
@@ -19,6 +20,8 @@ import { TeamsPage } from '../pages/hrm/TeamsPage';
 import { AttendanceLeavePage } from '../pages/hrm/AttendanceLeavePage';
 import { WorkSchedulesPage } from '../pages/hrm/WorkSchedulesPage';
 import { DocumentsPage } from '../pages/hrm/DocumentsPage';
+import { ChatPage } from '../pages/chat/ChatPage';
+import { CalendarPage } from '../pages/calendar/CalendarPage';
 import { BillingPage } from '../pages/billing/BillingPage';
 import { BillingSuccessPage } from '../pages/billing/BillingSuccessPage';
 import { BillingCancelPage } from '../pages/billing/BillingCancelPage';
@@ -121,11 +124,16 @@ export const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="claims" element={<ClaimsPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="time-tracking" element={<TimeTrackingPage />} />
         <Route path="reports" element={<ReportsPage />} />
+
+        {/* Collaboration Module */}
+        <Route path="chat" element={<ChatPage />} />
+        <Route path="calendar" element={<CalendarPage />} />
 
         {/* HRM Module */}
         <Route path="hrm" element={<HrmOverviewPage />} />

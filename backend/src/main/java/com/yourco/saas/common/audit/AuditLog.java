@@ -40,6 +40,10 @@ public class AuditLog {
         this.details = details;
     }
 
+    public static AuditLog of(UUID actorId, String action, String targetType, String targetId, String details) {
+        return new AuditLog(actorId, null, action, "SUCCESS", "type=" + targetType + ",id=" + targetId + (details != null ? "," + details : ""));
+    }
+
     public UUID getId() { return id; }
     public UUID getActorId() { return actorId; }
     public String getActorRole() { return actorRole; }

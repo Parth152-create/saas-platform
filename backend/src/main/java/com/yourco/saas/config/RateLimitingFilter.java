@@ -32,7 +32,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())
                 || uri.startsWith("/actuator")
                 || uri.startsWith("/v3/api-docs")
-                || uri.startsWith("/swagger-ui")) {
+                || uri.startsWith("/swagger-ui")
+                || uri.startsWith("/ws")) {
             filterChain.doFilter(request, response);
             return;
         }

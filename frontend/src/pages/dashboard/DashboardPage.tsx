@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -27,13 +27,12 @@ import {
   type WidgetConfig,
 } from '../../components/widgets/widgetDefaults';
 import {
-  MOCK_ACTIVITIES,
   MOCK_CLAIMS,
   MOCK_DASHBOARD_KPIS,
-  MOCK_TASKS,
 } from '../../mocks/mockHrmData';
 import { Badge } from '../../components/common/Badge';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { projectsApi, type ProjectStats } from '../../api/projectsApi';
 
 const DASHBOARD_STORAGE_KEY = 'saas_dashboard_widgets_v1';
 
@@ -55,6 +54,14 @@ export const DashboardPage: React.FC = () => {
       return DEFAULT_DASHBOARD_WIDGETS;
     }
   });
+
+  const [projectStats, setProjectStats] = useState<ProjectStats | null>(null);
+
+  useEffect(() => {
+    projectsApi.getProjectStats()
+      .then(setProjectStats)
+      .catch(() => {});
+  }, []);
 
   const handleToggleWidget = (widgetId: string) => {
     setWidgets((prev) =>
@@ -161,8 +168,11 @@ export const DashboardPage: React.FC = () => {
           />
           <StatCard
             title="Pending Tasks"
-            value={MOCK_DASHBOARD_KPIS.pendingTasks}
-            change={{ value: '6 due soon', isPositive: false }}
+            value={projectStats ? projectStats.openTasks : 0}
+            change={{
+              value: projectStats ? `${projectStats.overdueTasks} overdue` : '0 overdue',
+              isPositive: projectStats ? projectStats.overdueTasks === 0 : true,
+            }}
             icon={<CheckSquare className="w-5 h-5 text-neutral-900 dark:text-neutral-100" />}
             iconBgColor="bg-neutral-100 dark:bg-[#1f1f1f]"
           />
@@ -227,8 +237,8 @@ export const DashboardPage: React.FC = () => {
 
       {/* Operations Grid: Tasks & Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-        {isVisible('tasksList') && <TaskListWidget tasks={MOCK_TASKS} />}
-        {isVisible('recentActivity') && <RecentActivityWidget activities={MOCK_ACTIVITIES} />}
+        {isVisible('tasksList') && <TaskListWidget />}
+        {isVisible('recentActivity') && <RecentActivityWidget />}
       </div>
 
       {/* Claims Overview Table */}

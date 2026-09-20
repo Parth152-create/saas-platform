@@ -10,7 +10,7 @@
 [![Stripe](https://img.shields.io/badge/Stripe-Billing-635BFF.svg?style=flat-square&logo=stripe)](https://stripe.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-Nexa is an enterprise-grade, multi-tenant workforce and operations SaaS platform built with a schema-per-tenant architecture on PostgreSQL, Spring Boot, and React. Engineered for organizational agility and strict data governance, Nexa combines comprehensive workforce directory management, role-based access control (RBAC), fine-grained feature entitlements, automated Stripe billing synchronization with deterministic subscription reconciliation, and asynchronous audit logging into a unified, secure platform.
+Nexa is an enterprise-grade, multi-tenant workforce and operations SaaS platform built with a schema-per-tenant architecture on PostgreSQL, Spring Boot, and React. Engineered for organizational agility and strict data governance, Nexa combines comprehensive workforce directory management, persistent project and task tracking, real-time team collaboration, an internal milestone calendar, role-based access control (RBAC), fine-grained feature entitlements, automated Stripe billing synchronization with deterministic subscription reconciliation, and asynchronous audit logging into a unified, secure platform.
 
 ---
 
@@ -54,7 +54,8 @@ Modern organizations require segregated operational boundaries without sacrifici
 - **Multi-Tenant Architecture:** Employs a dedicated schema-per-tenant pattern on PostgreSQL. Each onboarded tenant receives an isolated relational schema, eliminating cross-tenant data leakage while maintaining a central `public` registry for tenant routing and billing state.
 - **Operational Domains:**
   - **Workforce & HRM:** Centralized employee records, departmental tracking, work models (Remote, Hybrid, On-Site), and workforce statistics.
-  - **Operations & Reporting:** Departmental budget utilization, report tiers (Basic, Advanced, Analytics, Custom Workflows), and administrative data exports.
+  - **Projects & Operations:** Persistent project lifecycles, interactive Kanban boards, task assignments, departmental budget utilization, and tiered reporting.
+  - **Collaboration & Real-Time Workspace:** STOMP-over-WebSocket team channels, project-linked discussion feeds, 1-to-1 direct messaging, persistent in-app notifications, and an internal milestone calendar.
   - **Identity & Security:** Dual authentication (Local BCrypt + Google OIDC), RS256 asymmetric JWT issuance, Redis-backed single-use refresh token rotation, and non-bypassable Role-Based Access Control (RBAC).
   - **Self-Service Billing:** Server-side Stripe Checkout, Stripe Customer Portal integration, transactional webhook ingestion, and deterministic subscription reconciliation.
 
@@ -67,6 +68,7 @@ Visual walkthrough of Nexa across its core operational interfaces:
 | Module | Description | Preview |
 |---|---|---|
 | **[Workspace Dashboard](#workspace-dashboard)** | Operational metrics, attendance rates, headcount, and recent audit activity | [Jump to preview ↓](#workspace-dashboard) |
+| **[Collaboration & Team Chat](#collaboration--team-chat)** | Real-time workspace channels, project-linked chats, 1-to-1 DMs, and @mentions | [Jump to preview ↓](#collaboration--team-chat) |
 | **[Public SaaS Landing Page](#public-saas-landing-page)** | Public overview, value proposition, and self-service tier selection | [Jump to preview ↓](#public-saas-landing-page) |
 | **[HRM & Employee Directory](#hrm--employee-directory)** | Comprehensive personnel records, departmental filters, and status badges | [Jump to preview ↓](#hrm--employee-directory) |
 | **[Subscription & Billing Management](#subscription--billing-management)** | Stripe-backed tier subscriptions, portal redirects, and invoice history | [Jump to preview ↓](#subscription--billing-management) |
@@ -77,6 +79,13 @@ Visual walkthrough of Nexa across its core operational interfaces:
 Executive operational dashboard tracking active headcount, attendance percentages, billable hours, department breakdown, and recent audit events.
 
 ![Nexa Workspace Dashboard](docs/screenshots/dashboard.png)
+
+---
+
+### Collaboration & Team Chat
+Real-time team communication featuring workspace channels, project-linked channels, private 1-to-1 direct messaging, unread counts, and rich @mentions.
+
+![Nexa Collaboration — Real-Time Team Chat](docs/screenshots/chat.png)
 
 ---
 
@@ -109,10 +118,26 @@ Self-service billing dashboard with active plan entitlements, Stripe Checkout up
 - **Operational Metrics:** Real-time calculation of active headcount, department distribution, average attendance rates, and billable hour metrics.
 - **Workforce Operations UI:** Frontend interfaces for attendance and leave tracking, work schedules, time tracking, and organizational document management.
 
-### Operations & Analytics
+### Projects, Tasks & Operations
+- **Persistent Project Lifecycles:** PostgreSQL-persisted project records supporting status management (`PLANNING`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `CANCELLED`), priority levels, budgets, target dates, and ownership.
+- **Enterprise Task Tracking & Kanban:** Interactive Kanban boards with column drag-and-drop transitions (`TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`), priority badges (`LOW`, `MEDIUM`, `HIGH`, `URGENT`), due-date alerts, overdue filters, and assignee management.
+- **Project Members & Collaboration Context:** Project membership bindings (`MANAGER`, `CONTRIBUTOR`, `VIEWER`) integrated with real-time project discussion channels.
 - **Tiered Reporting Engine:** Method-level feature gated reports providing basic summaries, advanced cost and utilization metrics, analytics run rates, and custom escalation matrices.
-- **Project & Task Tracking:** Frontend operational interfaces for tracking project milestones, deliverables, and enterprise task assignment.
 - **Expense & Claims Management:** Expense claim logging, approval statuses, and cost categorization.
+
+### Collaboration & Real-Time Workspace
+- **Workspace Channels:** Public and team channels (e.g. `#general`, `#random`) with role-based management, message persistence, and paginated history.
+- **Project-Linked Channels:** Automatic derivation of project-specific channels (`#proj-<slug>`) synchronized with persistent project records, enabling focused cross-functional discussions.
+- **1-to-1 Direct Messaging:** Private bilateral chat between workspace colleagues featuring persistent threads and unread message indicators.
+- **Real-Time STOMP Delivery:** WebSocket communication over `/ws` using Spring's simple message broker, delivering sub-second updates for new messages, typing cues, and unread alerts.
+- **Rich Mentions & Notifications:** In-message `@mention` parsing that resolves against workspace users and automatically generates persistent, real-time in-app notifications.
+- **In-App Notification Center:** Header notification bell with real-time push alerts, unread count badges, notification detail modals, and mark-as-read/mark-all-read capabilities. Triggered by task assignments, task completions, project membership additions, DMs, and @mentions.
+- **Project Detail Chat Tab:** Embedded 6th tab on the Project Detail view (`Overview`, `Tasks`, `Kanban`, `Members`, `Activity`, and `Chat`) connecting discussions directly to project context.
+- **Internal Workspace Calendar:** Fully self-contained organizational calendar supporting month grid and agenda views, custom event creation with multi-attendee tracking, date-range filtering, and automatic milestone projection for project deadlines and task due dates.
+- **Schema-Per-Tenant Data Isolation:** Complete database-level segregation ensures all chat channels, messages, direct conversations, notifications, and calendar events reside exclusively within tenant-specific schemas.
+
+> [!NOTE]
+> **Scope & Architectural Boundaries:** Nexa Collaboration v1 is designed strictly as an **internal workforce communication and coordination layer** scoped to the authenticated tenant workspace. It does not integrate external collaboration suites (e.g., Slack, Microsoft Teams), third-party calendars (e.g., Google Calendar, Outlook 365), voice/video telephony, screen sharing, or AI scheduling.
 
 ### Identity & Security Controls
 - **Dual Authentication Modes:** Native email/password authentication using BCrypt password hashing alongside verified Google Identity Services (GIS) OIDC integration.
@@ -139,12 +164,16 @@ Self-service billing dashboard with active plan entitlements, Stripe Checkout up
 
 ## Architecture
 
-Nexa follows a decoupled architecture separating a stateless Spring Boot REST API backend from an optimized React Single Page Application (SPA).
+Nexa follows a decoupled architecture separating a stateless Spring Boot REST API and real-time STOMP message broker backend from an optimized React Single Page Application (SPA).
 
 ```mermaid
 flowchart TD
     subgraph Client["Client Tier"]
         Browser["Web Browser (React 19 / Vite SPA)"]
+        ApiClient["apiClient (REST / Axios)"]
+        WsClient["websocketClient (STOMP / SockJS)"]
+        Browser --> ApiClient
+        Browser --> WsClient
     end
 
     subgraph Gateway["Reverse Proxy Tier (Docker / Production)"]
@@ -155,16 +184,19 @@ flowchart TD
         CorrFilter["CorrelationIdFilter (MDC / X-Request-ID)"]
         SecurityFilter["SecurityFilterChain (Stateless)"]
         JwtFilter["JwtAuthenticationFilter (RS256 Verification)"]
+        WsInterceptor["AuthChannelInterceptor (STOMP JWT & Isolation)"]
         TenantCtx["TenantContext (ThreadLocal Schema)"]
         Controllers["REST Controllers (/api/*)"]
+        SimpBroker["STOMP In-Memory Broker (/topic, /queue, /user)"]
         Aspects["AOP Aspects (@RequiresFeature, @Auditable)"]
-        Services["Business Services (Billing, HRM, Auth)"]
+        Services["Domain Services (Billing, HRM, Projects, Collaboration)"]
+        Broadcaster["WebSocketEventBroadcaster"]
         Hibernate["Hibernate 6 Multi-Tenancy Engine"]
     end
 
     subgraph DataTier["Data & Cache Tier"]
         PostgresPublic[("PostgreSQL 16\npublic.tenant_registry")]
-        PostgresTenant[("PostgreSQL 16\ntenant_*\n(users, hrm, billing)")]
+        PostgresTenant[("PostgreSQL 16\ntenant_*\n(users, hrm, billing, projects, chat, calendar)")]
         RedisCache[("Redis 7\n(Refresh Tokens / Blacklist)")]
     end
 
@@ -173,8 +205,10 @@ flowchart TD
         GoogleOIDC["Google Identity Services (OAuth 2.0)"]
     end
 
-    Browser -->|HTTP Requests| Nginx
+    ApiClient -->|HTTP REST /api/*| Nginx
+    WsClient -->|WebSocket /ws Upgrade| Nginx
     Nginx -->|/api/* and /actuator/*| CorrFilter
+    Nginx -->|/ws Connection| WsInterceptor
     Nginx -->|Static Assets / SPA Fallback| Browser
 
     CorrFilter --> SecurityFilter
@@ -183,6 +217,10 @@ flowchart TD
     JwtFilter --> Controllers
     Controllers --> Aspects
     Aspects --> Services
+    Services --> Broadcaster
+    Broadcaster --> SimpBroker
+    SimpBroker -.->|Real-Time Push Frames| WsClient
+    WsInterceptor -->|Validate JWT & Enforce Isolation| SimpBroker
     Services --> Hibernate
 
     Hibernate -->|Registry Queries via JdbcTemplate| PostgresPublic
@@ -196,14 +234,21 @@ flowchart TD
 
 ### Architectural Separation & Request Lifecycle
 
-1. **Client Tier:** React 19 SPA built with TypeScript, Vite, and Tailwind CSS. Centralizes API communication through a typed `apiClient` supporting automatic JWT attachment, interceptor queues, and transparent token refreshing.
-2. **Reverse Proxy:** In containerized deployments, Nginx terminates HTTP on port `80`, serves static production assets with gzip compression, handles client-side routing fallbacks via `try_files`, and reverse-proxies `/api/` and `/actuator/` requests to the Spring Boot application.
+1. **Client Tier:** React 19 SPA built with TypeScript, Vite, and Tailwind CSS. Centralizes API communication through a typed `apiClient` supporting automatic JWT attachment, interceptor queues, and transparent token refreshing, alongside a managed `websocketClient` for persistent STOMP messaging over SockJS.
+2. **Reverse Proxy:** In containerized deployments, Nginx terminates HTTP on port `80`, serves static production assets with gzip compression, handles client-side routing fallbacks via `try_files`, and reverse-proxies `/api/`, `/actuator/`, and `/ws` WebSocket upgrade requests to the Spring Boot application.
 3. **Security Pipeline:**
    - `CorrelationIdFilter` captures incoming `X-Request-ID` or generates a UUID, binds it to SLF4J MDC, and appends it to response headers.
    - `JwtAuthenticationFilter` intercepts the Bearer token, validates signatures using the RS256 public key, verifies tenant validity against `public.tenant_registry`, and loads authorities into Spring Security's `SecurityContextHolder`.
    - The verified `schema_name` is bound to `TenantContext` (`ThreadLocal`).
 4. **Data Routing:** Hibernate queries intercept the `TenantContext` through `TenantIdentifierResolver`. The `TenantConnectionProvider` acquires a pooled connection from HikariCP and executes `Connection.setSchema(tenantIdentifier)` before query execution, resetting back to `public` upon connection release.
 5. **Thread Safety:** Every filter and controller invoking `TenantContext.setTenant(...)` guarantees execution of `TenantContext.clear()` inside a `finally` block to prevent schema leaks across HikariCP worker threads.
+6. **Dual-Protocol Communication Pattern:**
+   - **REST Engine (`/api/*`):** Serves as the authoritative backbone for transactional state mutations, paginated historical retrieval (channel logs, direct messages, user notifications), date-window queries, and administrative CRUD operations.
+   - **WebSocket / STOMP Engine (`/ws`):** Provides sub-second reactive push delivery for new channel messages, 1-to-1 direct messages, user notification counters, and organizational calendar updates.
+7. **WebSocket Security & Subscription Lifecycle:**
+   - Connections to `/ws` authenticate during the STOMP `CONNECT` frame via `Authorization: Bearer <token>`.
+   - `AuthChannelInterceptor` verifies token signatures, validates that the tenant is active in `public.tenant_registry`, checks that the user account is enabled, establishes the Spring Security principal, and binds `tenant_id`, `tenant_schema`, and `user_id` to STOMP session attributes.
+   - When subscribing to destinations (`SUBSCRIBE`), `AuthChannelInterceptor` enforces tenant boundaries: attempts to subscribe to foreign tenant topics (`/topic/tenant/{targetTenantId}/**`) are rejected with `SecurityException`, while direct message subscriptions (`/topic/tenant/{tenantId}/dm/{conversationId}`) verify bilateral user membership within the tenant's database schema.
 
 ---
 
@@ -229,6 +274,16 @@ Nexa implements a strict **Schema-Per-Tenant** multi-tenancy model on PostgreSQL
 │   - stripe_customer_id        │               │ • processed_webhook_events    │
 │                               │               │ • departments                 │
 │                               │               │ • employees                   │
+│                               │               │ • projects                    │
+│                               │               │ • project_members             │
+│                               │               │ • tasks                       │
+│                               │               │ • chat_channels               │
+│                               │               │ • chat_messages               │
+│                               │               │ • direct_conversations        │
+│                               │               │ • direct_messages             │
+│                               │               │ • notifications               │
+│                               │               │ • calendar_events             │
+│                               │               │ • calendar_event_attendees    │
 └───────────────────────────────┘               └───────────────────────────────┘
 ```
 
@@ -243,7 +298,7 @@ The `public.tenant_registry` table acts as the global catalog for tenant resolut
 ### 2. Tenant Resolution & Lifecycle
 - **Tenant Provisioning:** When a tenant signs up (`POST /api/auth/signup`), `TenantOnboardingService` validates the tenant slug against `^[a-z][a-z0-9_-]{0,49}$`, derives the schema name (`tenant_` + sanitized slug), executes schema-level Flyway migrations from `classpath:db/migration/tenant`, and registers the tenant in `public.tenant_registry`.
 - **Automatic Schema Migration:** During backend startup, `TenantProvisioningService` listens for `ApplicationReadyEvent`, queries `public.tenant_registry` for all active schema names, and runs pending Flyway migrations against every tenant schema.
-- **Isolation Guarantees:** Cross-tenant access is prevented at the database driver level via PostgreSQL `setSchema`. The application rejects user-controlled tenant parameters in business queries; all tenant resolution is derived exclusively from validated JWT claims.
+- **Isolation Guarantees:** Cross-tenant access is prevented at the database driver level via PostgreSQL `setSchema`. The application rejects user-controlled tenant parameters in business queries; all tenant resolution is derived exclusively from validated JWT claims across both HTTP REST requests and WebSocket STOMP subscription frames.
 
 ---
 
@@ -390,7 +445,7 @@ When evaluating candidate subscriptions for a tenant customer:
 
 | Plan Tier | Price | Employee Limit | Included Features |
 |---|---|---|---|
-| **Starter / Free** | $0 / mo | Up to 10 | `EMPLOYEE_MANAGEMENT`, `TEAM_MANAGEMENT`, `PROJECT_MANAGEMENT`, `TASK_MANAGEMENT`, `CLAIMS`, `TIME_TRACKING`, `ATTENDANCE`, `LEAVE_MANAGEMENT`, `WORK_SCHEDULES`, `DOCUMENTS`, `BASIC_REPORTS` |
+| **Starter / Free** | $0 / mo | Up to 10 | `EMPLOYEE_MANAGEMENT`, `TEAM_MANAGEMENT`, `PROJECT_MANAGEMENT`, `TASK_MANAGEMENT`, `TEAM_CHAT`, `NOTIFICATIONS`, `CALENDAR`, `CLAIMS`, `TIME_TRACKING`, `ATTENDANCE`, `LEAVE_MANAGEMENT`, `WORK_SCHEDULES`, `DOCUMENTS`, `BASIC_REPORTS` |
 | **Professional (Pro)** | $49 / mo | Up to 100 | All Starter features plus: `ADVANCED_REPORTS`, `ADVANCED_ANALYTICS`, `ADVANCED_HRM`, Self-Service Portal, Automated Invoicing |
 | **Enterprise Suite** | $199 / mo | Unlimited | All Pro features plus: `CUSTOM_WORKFLOWS`, `ADVANCED_INTEGRATIONS`, Custom Schedule Models, Dedicated Support |
 
@@ -408,6 +463,13 @@ Feature entitlements are enforced on the backend via Spring AOP:
 - **Cryptographic JWT Validation:** Access tokens signed via RSA-2048 private key and validated with RS256 public key.
 - **Refresh Token Revocation in Redis:** Refresh tokens are single-use; rotation revokes the JTI immediately upon use.
 - **Tenant Isolation:** Complete logical and physical database segregation via PostgreSQL schema-per-tenant. Dynamic schema selection driven exclusively by verified JWT claims.
+- **WebSocket & Real-Time STOMP Security:**
+  - Authenticated STOMP handshake over `/ws` requiring an RS256 Bearer JWT in the `CONNECT` frame's native headers.
+  - Principal identity, user ID, role, and tenant context derived exclusively from cryptographically verified token claims; clients cannot forge or override tenant context.
+  - Strict topic subscription authorization: `/topic/tenant/{tenantId}/**` destinations enforce matching tenant identity. Subscriptions targeting foreign tenant topics are intercepted and rejected with `SecurityException`.
+  - Bilateral DM conversation authorization: Subscribing to `/topic/tenant/{tenantId}/dm/{conversationId}` verifies within the tenant schema that the authenticated user is an active participant in the conversation.
+  - User-isolated notification destinations: Subscriptions to `/topic/tenant/{tenantId}/users/{userId}/notifications` verify that `userId` matches the authenticated subject.
+  - Active user status check: Disabled or suspended user accounts are immediately rejected during STOMP frame interception.
 - **Stripe Webhook Verification:** Cryptographic HMAC signature validation on all incoming webhooks using `STRIPE_WEBHOOK_SECRET`.
 - **Webhook Idempotency:** Webhook event IDs are atomically claimed in `processed_webhook_events` before execution, defending against replay and duplicate delivery.
 - **Audit Trail Logging:** Asynchronous AOP auditing via `@Auditable` logs all critical mutations with actor ID, role, outcome, and timestamp to tenant-local `audit_logs` tables.
@@ -438,8 +500,10 @@ Nexa integrates Spring Boot Actuator for runtime metrics and health probes:
 |---|---|---|
 | **Backend Framework** | Spring Boot | 4.1.1 |
 | **Backend Language** | Java (OpenJDK / Temurin) | 25 |
+| **Real-Time Messaging** | Spring WebSocket / STOMP Broker | In-Memory Simple Broker |
 | **Frontend Framework** | React | 19.2.8 |
 | **Frontend Language** | TypeScript | ~6.0.2 |
+| **WebSocket Client** | @stomp/stompjs & sockjs-client | 7.x / 1.6.x |
 | **Build Tool (Frontend)** | Vite | 8.2.2 |
 | **Styling** | Tailwind CSS | 4.3.3 |
 | **Icons & UI** | Lucide React | 1.47.0 |
@@ -475,10 +539,12 @@ saas-platform/
 │   │   │   │   ├── PingController.java
 │   │   │   │   ├── auth/            # Authentication, JWT, Google OIDC, Refresh rotation
 │   │   │   │   ├── billing/         # Stripe checkout, portal, webhook, entitlements, AOP
-│   │   │   │   ├── common/          # Audit logging, exception handling, error DTOs
+│   │   │   │   ├── collaboration/   # Chat channels, DMs, notifications, calendar, WebSocket broker
+│   │   │   │   ├── common/          # Audit logging, email/storage abstractions, exception handling
 │   │   │   │   ├── config/          # SecurityConfig, OpenAPI, CORS, CorrelationIdFilter
-│   │   │   │   ├── domain/          # JPA Entities (User, Customer, Subscription, Invoice, HRM)
+│   │   │   │   ├── domain/          # Entities & repos (User, Customer, Projects, Tasks, Collaboration)
 │   │   │   │   ├── hrm/             # HRM service, controller, DTOs
+│   │   │   │   ├── projects/        # Persistent Projects, Tasks, Kanban, Project Members
 │   │   │   │   ├── rbac/            # RBAC verification debug endpoints
 │   │   │   │   ├── reports/         # Tiered reporting endpoints with @RequiresFeature
 │   │   │   │   ├── tenant/          # Schema-per-tenant resolvers, connection provider, provisioning
@@ -488,29 +554,34 @@ saas-platform/
 │   │   │       ├── certs/           # RSA keypair for RS256 JWT signing
 │   │   │       └── db/migration/
 │   │   │           ├── global/      # Public schema Flyway migrations (tenant_registry)
-│   │   │           └── tenant/      # Tenant schema migrations (users, billing, hrm)
-│   │   └── test/                    # Integration & unit test suites (112 test methods)
+│   │   │           └── tenant/      # Tenant schema migrations (users, billing, hrm, projects, chat)
+│   │   └── test/                    # Integration & unit test suites (163 test methods)
 │
 └── frontend/                        # React 19 / TypeScript / Vite 8 Application
     ├── Dockerfile                   # Multi-stage Node 22 build with Nginx Alpine runtime
-    ├── nginx.conf                   # Nginx reverse proxy configuration (/api/, /actuator/, SPA)
+    ├── nginx.conf                   # Nginx reverse proxy configuration (/api/, /actuator/, /ws, SPA)
     ├── package.json                 # Frontend dependencies & npm scripts
     ├── vite.config.ts               # Vite configuration with Tailwind CSS plugin
     └── src/
-        ├── api/                     # Typed API clients (auth, billing, hrm, reports, users)
+        ├── api/                     # Typed API clients (auth, billing, hrm, projects, chat, calendar)
+        ├── collaboration/           # WebSocket STOMP client over SockJS (websocketClient.ts)
         ├── components/
         │   ├── common/              # Buttons, Badges, Modals, Cards, NexaLogo
         │   ├── landing/             # Public landing page sections
         │   └── layout/              # AppShell, Sidebar, TopHeader, NotificationDropdown
-        ├── context/                 # AuthContext, EntitlementsContext, ThemeContext, ToastContext
+        ├── context/                 # AuthContext, EntitlementsContext, NotificationContext, ThemeContext
         ├── pages/
         │   ├── auth/                # Login, Signup, AcceptInvite
         │   ├── billing/             # Billing management, Stripe Success/Cancel redirects
+        │   ├── calendar/            # Workspace calendar with project/task milestone projections
+        │   ├── chat/                # Workspace channels and 1-to-1 direct messaging
         │   ├── dashboard/           # Main workspace dashboard
         │   ├── hrm/                 # Employee directory, profiles, teams, attendance, tracking
-        │   ├── operations/          # Projects, Tasks, Claims, Schedules
+        │   ├── operations/          # Claims, Schedules
+        │   ├── projects/            # Project list, detail view, members, and embedded Chat tab
         │   ├── reports/             # Tiered reports & export controls
-        │   └── settings/            # Company, Users, Roles, Integrations, System settings
+        │   ├── settings/            # Company, Users, Roles, Integrations, System settings
+        │   └── tasks/               # Enterprise task management & Kanban board
         └── routes/                  # React Router configuration & ProtectedRoute guards
 ```
 
@@ -573,6 +644,72 @@ saas-platform/
 | `GET` | `/api/reports/analytics` | `ADVANCED_ANALYTICS` | Returns run-rate and growth analytics. |
 | `GET` | `/api/reports/custom-workflows`| `CUSTOM_WORKFLOWS` | Returns approval and escalation matrix configs. |
 | `POST` | `/api/reports/admin-advanced-export` | `ADMIN` + `ADVANCED_REPORTS` | Triggers administrative export of advanced metrics. |
+
+### Projects & Task Management (`/api/projects`, `/api/tasks`)
+
+| Method | Path | Access / Feature | Description |
+|---|---|---|---|
+| `GET` | `/api/projects` | `PROJECT_MANAGEMENT` | Lists projects with status, priority, owner, and search filters. |
+| `POST` | `/api/projects` | `MANAGER`+ + `PROJECT_MANAGEMENT` | Creates a new persistent project record. |
+| `GET` | `/api/projects/{id}` | `PROJECT_MANAGEMENT` | Retrieves project details by UUID. |
+| `PATCH` | `/api/projects/{id}` | `MANAGER`+ + `PROJECT_MANAGEMENT` | Updates project metadata, status, budget, or dates. |
+| `DELETE` | `/api/projects/{id}` | `ADMIN`+ + `PROJECT_MANAGEMENT` | Deletes a project record. |
+| `GET` | `/api/projects/stats` | `PROJECT_MANAGEMENT` | Aggregates project counts by status, priority, and budget. |
+| `GET` | `/api/projects/{id}/members` | `PROJECT_MANAGEMENT` | Lists assigned project team members. |
+| `POST` | `/api/projects/{id}/members` | `MANAGER`+ + `PROJECT_MANAGEMENT` | Adds a workspace employee to the project team. |
+| `DELETE` | `/api/projects/{id}/members/{memberId}` | `MANAGER`+ + `PROJECT_MANAGEMENT` | Removes a member from the project. |
+| `GET` | `/api/projects/{id}/activity` | `PROJECT_MANAGEMENT` | Lists recent activity logs for a specific project. |
+| `GET` | `/api/projects/{projectId}/tasks` | `TASK_MANAGEMENT` | Retrieves tasks for a given project with Kanban/status filters. |
+| `POST` | `/api/projects/{projectId}/tasks` | `MANAGER`+ + `TASK_MANAGEMENT` | Creates a task within a project. |
+| `GET` | `/api/tasks` | `TASK_MANAGEMENT` | Lists all tasks across tenant projects with overdue and assignee filters. |
+| `GET` | `/api/tasks/{taskId}` | `TASK_MANAGEMENT` | Retrieves task details by UUID. |
+| `PATCH` | `/api/tasks/{taskId}` | `TASK_MANAGEMENT` | Updates task status, priority, due date, or assignee. |
+| `DELETE` | `/api/tasks/{taskId}` | `MANAGER`+ + `TASK_MANAGEMENT` | Deletes a task record. |
+
+### Team Chat & Direct Messaging (`/api/chat`)
+
+| Method | Path | Access / Feature | Description |
+|---|---|---|---|
+| `GET` | `/api/chat/channels` | `TEAM_CHAT` | Lists all available workspace chat channels. |
+| `POST` | `/api/chat/channels` | `MANAGER`+ + `TEAM_CHAT` | Creates a new workspace chat channel. |
+| `GET` | `/api/chat/channels/{channelId}` | `TEAM_CHAT` | Retrieves channel details by UUID. |
+| `DELETE` | `/api/chat/channels/{channelId}` | `ADMIN`+ + `TEAM_CHAT` | Deletes a channel and message history. |
+| `GET` | `/api/chat/projects/{projectId}/channel` | `TEAM_CHAT` | Retrieves or lazily provisions the linked channel for a project. |
+| `GET` | `/api/chat/channels/{channelId}/messages` | `TEAM_CHAT` | Paginated message history for a channel. |
+| `POST` | `/api/chat/channels/{channelId}/messages` | `TEAM_CHAT` | Sends a channel message with real-time broadcast and @mention parsing. |
+| `GET` | `/api/chat/direct` | `TEAM_CHAT` | Lists active 1-to-1 direct conversations for current user. |
+| `POST` | `/api/chat/direct/{userId}` | `TEAM_CHAT` | Retrieves or initiates a direct conversation with a colleague. |
+| `GET` | `/api/chat/direct/{conversationId}/messages` | `TEAM_CHAT` | Paginated direct message history. |
+| `POST` | `/api/chat/direct/{conversationId}/messages` | `TEAM_CHAT` | Sends a private 1-to-1 message with real-time push. |
+
+### In-App Notifications (`/api/notifications`)
+
+| Method | Path | Access / Feature | Description |
+|---|---|---|---|
+| `GET` | `/api/notifications` | `NOTIFICATIONS` | Paginated list of notifications for the authenticated user. |
+| `GET` | `/api/notifications/unread-count` | `NOTIFICATIONS` | Retrieves active unread notification badge count. |
+| `PUT` | `/api/notifications/{id}/read` | `NOTIFICATIONS` | Marks an individual notification as read. |
+| `PUT` | `/api/notifications/read-all` | `NOTIFICATIONS` | Marks all notifications as read for current user. |
+
+### Internal Workspace Calendar (`/api/calendar`)
+
+| Method | Path | Access / Feature | Description |
+|---|---|---|---|
+| `GET` | `/api/calendar/events` | `CALENDAR` | Returns custom events and projected project deadlines & task due dates in a date window. |
+| `POST` | `/api/calendar/events` | `CALENDAR` | Creates a custom calendar event with multi-user attendee tracking. |
+| `GET` | `/api/calendar/events/{id}` | `CALENDAR` | Retrieves event details and attendee list by UUID. |
+| `PUT` | `/api/calendar/events/{id}` | `CALENDAR` | Updates event time, location, title, and attendees. |
+| `DELETE` | `/api/calendar/events/{id}` | `CALENDAR` | Deletes a custom calendar event. |
+
+### Real-Time WebSocket & STOMP Protocol (`/ws`)
+
+| Protocol / Destination | Direction | Access / Validation | Description |
+|---|---|---|---|
+| `WS /ws` | Client → Server | RS256 JWT Bearer | SockJS handshake and STOMP connection establishment. |
+| `/topic/tenant/{tenantId}/channels/{channelId}` | Server → Client | Tenant Member | Real-time channel message broadcasts. |
+| `/topic/tenant/{tenantId}/dm/{conversationId}` | Server → Client | Verified Bilateral Member | Real-time 1-to-1 direct message delivery. |
+| `/topic/tenant/{tenantId}/users/{userId}/notifications` | Server → Client | User Identity Match | Targeted real-time in-app notification alerts. |
+| `/topic/tenant/{tenantId}/calendar` | Server → Client | Tenant Member | Real-time calendar event creation, update, and deletion alerts. |
 
 ### Observability & System
 
@@ -733,21 +870,25 @@ Executed dynamically within each isolated tenant schema:
 - `V8__drop_legacy_billing_columns.sql`: Cleanups legacy billing structures.
 - `V9__add_invite_token.sql`: Adds `invite_token` and `invite_token_expires_at` with unique indexing.
 - `V10__create_hrm_tables.sql`: Provisions `departments` and `employees` tables with constraints and default seeds.
+- `V11__create_projects_and_tasks_tables.sql`: Provisions persistent `projects`, `project_members`, and `tasks` tables with status enums, priority ratings, foreign keys, and indexes.
+- `V12__create_collaboration_tables.sql`: Provisions `chat_channels`, `chat_messages`, `direct_conversations`, `direct_messages`, `notifications`, `calendar_events`, and `calendar_event_attendees` tables with cascading foreign keys and optimized timestamp indexes.
 
 ---
 
 ## Testing
 
-The backend contains **112 test methods across 18 test classes** validating the complete multi-tenant lifecycle.
+The backend contains **163 test methods across 22 test classes** validating the complete multi-tenant lifecycle.
 
 ### Test Categories
 
 - **Unit Tests:** Standalone tests exercising pure business logic without database requirements (e.g. `BillingServiceUnitTest`, `StripePropertiesTest`, `GoogleJwtDecoderUnitTest`, `BackendApplicationDotEnvTest`).
 - **Subscription Lifecycle Regression Tests:** Comprehensive test suite (`SubscriptionLifecycleRegressionTest`) validating out-of-order webhook delivery, dunning grace periods, cancellation lifecycles, and deterministic recency selection.
-- **Tenant Isolation Tests:** Multi-tenant integration tests (`CrossTenantIsolationTest`) asserting strict schema boundaries and preventing cross-tenant data leakage.
+- **Tenant Isolation Tests:** Multi-tenant integration tests (`CrossTenantIsolationTest`, `ApiCrossTenantIsolationTest`) asserting strict schema boundaries and preventing cross-tenant data leakage.
 - **RBAC & Privilege Escalation Tests:** Verifies role hierarchy propagation and validates that `ADMIN` accounts receive `403 FORBIDDEN` when attempting to invite `SUPER_ADMIN` users (`UserInviteFlowTest`, `RbacHierarchyTest`).
 - **Billing & Webhook Tests:** Mocked Stripe API tests exercising Checkout session generation, Portal sessions, and signature-verified webhook processing (`BillingControllerTest`, `StripeWebhookControllerTest`).
 - **Feature Entitlement Tests:** AOP validation ensuring methods guarded by `@RequiresFeature` reject access when the tenant lacks the required subscription tier (`FeatureEntitlementTest`).
+- **Projects & Task Management Tests:** Dedicated suites (`ProjectAndTaskIntegrationTest`, `ProjectTaskFinalBusinessFlowTest`) verifying project CRUD, task creation, Kanban workflow transitions, project membership assignment, and audit logs.
+- **Collaboration & Real-Time Messaging Tests:** Integration test suites (`ChatIntegrationTest`, `NotificationIntegrationTest`, `CalendarIntegrationTest`, `CollaborationFinalBusinessFlowTest`) testing channel creation, project-linked channels, 1-to-1 direct messaging, unread notification counters, calendar milestone projections, and STOMP topic isolation.
 
 ### Running Backend Tests
 
@@ -763,6 +904,7 @@ Run the complete integration suite (requires active Docker daemon for Testcontai
 cd backend
 ./mvnw test
 ```
+*Result:* `163 tests, 0 failures, 0 errors, 0 skipped`
 
 ### Running Frontend Validation
 
@@ -772,7 +914,7 @@ cd frontend
 npm run lint
 npm run build
 ```
-*Result:* ESLint passes with 0 errors; Vite produces production assets with full TypeScript validation.
+*Result:* ESLint passes with 0 errors and 0 warnings; Vite produces production assets with full TypeScript validation.
 
 ---
 
@@ -886,6 +1028,14 @@ Prior to deploying Nexa in a production environment, ensure the following checkl
 ### 5. Port Conflict on Host
 - **Symptom:** `Bind for 0.0.0.0:5434 failed: port is already allocated`.
 - **Resolution:** Override port mappings in your `.env` file (e.g. `PORT_POSTGRES=5435`, `PORT_REDIS=6381`, `PORT_BACKEND=8091`).
+
+### 6. WebSocket STOMP Connection Refused / 401
+- **Symptom:** Client receives `STOMP ERROR: Missing or invalid Authorization header` or connection closes immediately upon handshake.
+- **Resolution:** Verify the client passes `Authorization: Bearer <token>` in the native headers of the STOMP `CONNECT` frame. Ensure the JWT is valid and not expired, the user is active, and the `tenant_id` claim matches an active tenant in `public.tenant_registry`.
+
+### 7. Cross-Tenant STOMP Subscription Forbidden
+- **Symptom:** `SecurityException: Cross-tenant subscription forbidden`.
+- **Resolution:** Verify that frontend topic subscriptions target the authenticated tenant prefix (`/topic/tenant/{tenantId}/...`). The backend channel interceptor automatically rejects any attempt to subscribe to destinations belonging to other tenant schemas.
 
 ---
 

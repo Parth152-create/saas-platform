@@ -20,6 +20,8 @@ import {
   X,
   FileStack,
   Lock,
+  MessageSquare,
+  CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useEntitlements } from '../../context/EntitlementsContext';
@@ -80,6 +82,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { label: 'Attendance & Leave', path: '/app/hrm/attendance', icon: UserCheck, requiredFeature: 'ATTENDANCE', tierRequired: 'STARTER' },
         { label: 'Time Tracking', path: '/app/hrm/time-tracking', icon: Clock, requiredFeature: 'TIME_TRACKING', tierRequired: 'STARTER' },
         { label: 'Documents & Files', path: '/app/hrm/documents', icon: FileText, requiredFeature: 'DOCUMENTS', tierRequired: 'STARTER' },
+      ],
+    },
+    {
+      groupTitle: 'Collaboration',
+      items: [
+        { label: 'Messages & Chat', path: '/app/chat', icon: MessageSquare, requiredFeature: 'TEAM_CHAT', tierRequired: 'STARTER' },
+        { label: 'Calendar', path: '/app/calendar', icon: CalendarDays, requiredFeature: 'CALENDAR', tierRequired: 'STARTER' },
       ],
     },
     {

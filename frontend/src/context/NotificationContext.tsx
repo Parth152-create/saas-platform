@@ -3,9 +3,11 @@ import type { AppNotification } from '../types/notification';
 import {
   notificationsApi,
   saveStoredNotifications,
+  mapToAppNotification,
 } from '../api/notificationsApi';
 import { INITIAL_NOTIFICATIONS } from '../mocks/mockNotifications';
 import { useAuth } from './AuthContext';
+import { wsManager } from '../collaboration/websocketClient';
 
 export interface NotificationContextType {
   notifications: AppNotification[];
@@ -65,8 +67,27 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     fetchInitial();
 
+    // Connect WebSocket for live notifications
+    wsManager.connect();
+    const unsubWs = wsManager.subscribeToNotifications<{
+      id: string;
+      userId?: string;
+      title: string;
+      message?: string;
+      type?: string;
+      targetUrl?: string;
+      read: boolean;
+      createdAt: string;
+    }>((notifData) => {
+      if (!isCancelled) {
+        const appNotif = mapToAppNotification(notifData);
+        setNotifications((prev) => [appNotif, ...prev.filter((n) => n.id !== appNotif.id)]);
+      }
+    });
+
     return () => {
       isCancelled = true;
+      unsubWs();
     };
   }, [isAuthenticated]);
 

@@ -1,6 +1,9 @@
 import { apiClient } from './apiClient';
 import type { DepartmentSummary, Employee, EmployeeStatus, HrmStats } from './types';
 
+export type EmployeeDto = Employee;
+export type { DepartmentSummary, Employee, EmployeeStatus, HrmStats };
+
 export interface GetEmployeesParams {
   department?: string;
   status?: EmployeeStatus;

@@ -41,7 +41,10 @@ public class FeatureEntitlementService {
             Feature.LEAVE_MANAGEMENT,
             Feature.WORK_SCHEDULES,
             Feature.DOCUMENTS,
-            Feature.BASIC_REPORTS
+            Feature.BASIC_REPORTS,
+            Feature.TEAM_CHAT,
+            Feature.NOTIFICATIONS,
+            Feature.CALENDAR
     ));
 
     private static final Set<Feature> PRO_FEATURES;

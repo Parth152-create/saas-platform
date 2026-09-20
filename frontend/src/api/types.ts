@@ -72,7 +72,10 @@ export type Feature =
   | 'ADVANCED_ANALYTICS'
   | 'ADVANCED_HRM'
   | 'CUSTOM_WORKFLOWS'
-  | 'ADVANCED_INTEGRATIONS';
+  | 'ADVANCED_INTEGRATIONS'
+  | 'TEAM_CHAT'
+  | 'NOTIFICATIONS'
+  | 'CALENDAR';
 
 export interface FeatureEntitlementsResponse {
   plan: string;
