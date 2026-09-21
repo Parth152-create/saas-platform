@@ -21,4 +21,6 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, UU
                                                   @Param("to") Instant to);
 
     List<CalendarEvent> findByProjectId(UUID projectId);
+
+    List<CalendarEvent> findByCreatedBy(UUID createdBy);
 }

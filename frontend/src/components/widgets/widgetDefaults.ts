@@ -66,4 +66,20 @@ export const DEFAULT_DASHBOARD_WIDGETS: WidgetConfig[] = [
     icon: FileStack,
     visible: true,
   },
+  {
+    id: 'leaveWidget',
+    name: 'Leave & Approvals Tracker',
+    category: 'Lists',
+    description: 'Pending leave requests and personal leave balance status.',
+    icon: Users,
+    visible: true,
+  },
+  {
+    id: 'workloadWidget',
+    name: 'Workload & Capacity Overview',
+    category: 'Metrics',
+    description: 'Workforce capacity utilization, active tasks, and team load.',
+    icon: BarChart3,
+    visible: true,
+  },
 ];

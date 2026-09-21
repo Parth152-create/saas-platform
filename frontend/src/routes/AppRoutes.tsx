@@ -13,6 +13,10 @@ import { TasksPage } from '../pages/tasks/TasksPage';
 import { SchedulePage } from '../pages/schedule/SchedulePage';
 import { TimeTrackingPage } from '../pages/hrm/TimeTrackingPage';
 import { ReportsPage } from '../pages/reports/ReportsPage';
+import { SelfServicePage } from '../pages/selfservice/SelfServicePage';
+import { LeaveManagementPage } from '../pages/leave/LeaveManagementPage';
+import { WorkloadPage } from '../pages/workload/WorkloadPage';
+import { SearchPage } from '../pages/search/SearchPage';
 import { HrmOverviewPage } from '../pages/hrm/HrmOverviewPage';
 import { EmployeeListPage } from '../pages/hrm/EmployeeListPage';
 import { EmployeeProfilePage } from '../pages/hrm/EmployeeProfilePage';
@@ -130,6 +134,10 @@ export const AppRoutes: React.FC = () => {
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="time-tracking" element={<TimeTrackingPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="self-service" element={<SelfServicePage />} />
+        <Route path="leave" element={<LeaveManagementPage />} />
+        <Route path="workload" element={<WorkloadPage />} />
+        <Route path="search" element={<SearchPage />} />
 
         {/* Collaboration Module */}
         <Route path="chat" element={<ChatPage />} />

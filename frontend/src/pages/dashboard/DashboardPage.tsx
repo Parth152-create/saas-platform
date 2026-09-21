@@ -21,6 +21,8 @@ import { StatCard } from '../../components/widgets/StatCard';
 import { SimpleBarChart, SimpleDonutChart } from '../../components/widgets/SimpleChart';
 import { RecentActivityWidget } from '../../components/widgets/RecentActivityWidget';
 import { TaskListWidget } from '../../components/widgets/TaskListWidget';
+import { LeaveSummaryWidget } from '../../components/widgets/LeaveSummaryWidget';
+import { WorkloadWidget } from '../../components/widgets/WorkloadWidget';
 import { WidgetLibraryDrawer } from '../../components/widgets/WidgetLibraryDrawer';
 import {
   DEFAULT_DASHBOARD_WIDGETS,
@@ -239,6 +241,12 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
         {isVisible('tasksList') && <TaskListWidget />}
         {isVisible('recentActivity') && <RecentActivityWidget />}
+      </div>
+
+      {/* Workforce & Operations Extensions: Leave & Workload */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+        {isVisible('leaveWidget') && <LeaveSummaryWidget />}
+        {isVisible('workloadWidget') && <WorkloadWidget />}
       </div>
 
       {/* Claims Overview Table */}

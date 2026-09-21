@@ -53,9 +53,10 @@ Modern organizations require segregated operational boundaries without sacrifici
 - **Core Purpose:** Consolidate workforce personnel records, departmental hierarchies, project oversight, operational expenses/claims, and subscription lifecycle management into a cohesive, secure interface.
 - **Multi-Tenant Architecture:** Employs a dedicated schema-per-tenant pattern on PostgreSQL. Each onboarded tenant receives an isolated relational schema, eliminating cross-tenant data leakage while maintaining a central `public` registry for tenant routing and billing state.
 - **Operational Domains:**
-  - **Workforce & HRM:** Centralized employee records, departmental tracking, work models (Remote, Hybrid, On-Site), and workforce statistics.
-  - **Projects & Operations:** Persistent project lifecycles, interactive Kanban boards, task assignments, departmental budget utilization, and tiered reporting.
+  - **Workforce & HRM:** Centralized employee records, departmental tracking, work models (Remote, Hybrid, On-Site), workforce statistics, Employee Self-Service (ESS), and comprehensive Leave & Absence Management with balance tracking and approval workflows.
+  - **Projects & Operations:** Persistent project lifecycles, interactive Kanban boards, task assignments, departmental budget utilization, tiered reporting, and team Workload & Capacity Planning.
   - **Collaboration & Real-Time Workspace:** STOMP-over-WebSocket team channels, project-linked discussion feeds, 1-to-1 direct messaging, persistent in-app notifications, and an internal milestone calendar.
+  - **Enterprise Operations & Intelligence:** Global Multi-Entity Search across records, streaming RFC-4180 CSV exports for compliance and reporting, and transactional Bulk Operations for tasks and users.
   - **Identity & Security:** Dual authentication (Local BCrypt + Google OIDC), RS256 asymmetric JWT issuance, Redis-backed single-use refresh token rotation, and non-bypassable Role-Based Access Control (RBAC).
   - **Self-Service Billing:** Server-side Stripe Checkout, Stripe Customer Portal integration, transactional webhook ingestion, and deterministic subscription reconciliation.
 
@@ -118,12 +119,32 @@ Self-service billing dashboard with active plan entitlements, Stripe Checkout up
 - **Operational Metrics:** Real-time calculation of active headcount, department distribution, average attendance rates, and billable hour metrics.
 - **Workforce Operations UI:** Frontend interfaces for attendance and leave tracking, work schedules, time tracking, and organizational document management.
 
+### Employee Self-Service (ESS)
+- **Personalized Workspace Portal:** Dedicated `/self-service` hub empowering individual contributors to view their linked employee profile, job title, department assignment, and reporting lines.
+- **Assigned Task Execution:** Filterable personal task roster (`ALL`, `TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`) with one-click direct status transitions, overdue indicators, and priority tags.
+- **Active Project Roster:** Instant visibility into all projects where the employee is enrolled as an active team member with assigned roles (`MANAGER`, `CONTRIBUTOR`, `VIEWER`).
+- **Personal Overview Dashboard:** Consolidated personal statistics including total assigned tasks, pending reviews, active projects, and remaining leave balance allowances.
+
+### Leave & Absence Management
+- **Complete Request Lifecycle:** End-to-end leave management supporting multiple categories (`VACATION`, `SICK`, `PERSONAL`, `UNPAID`) with states (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`).
+- **Automated Balance Tracking:** Per-employee leave balances persisted in `leave_balances` tracking total entitlement, used days, and remaining balance with real-time deduction upon request approval.
+- **Manager Approval Inbox:** Dedicated queue for Managers and Admins to review pending leave requests across the workspace with one-click approval or rejection with notes.
+- **Self-Service Cancellation:** Employees can cancel pending requests at any time before manager review.
+- **Real-Time Notification Integration:** Automated in-app notifications dispatched to managers on submission, and to employees upon approval, rejection, or balance changes.
+
 ### Projects, Tasks & Operations
 - **Persistent Project Lifecycles:** PostgreSQL-persisted project records supporting status management (`PLANNING`, `ACTIVE`, `ON_HOLD`, `COMPLETED`, `CANCELLED`), priority levels, budgets, target dates, and ownership.
 - **Enterprise Task Tracking & Kanban:** Interactive Kanban boards with column drag-and-drop transitions (`TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`), priority badges (`LOW`, `MEDIUM`, `HIGH`, `URGENT`), due-date alerts, overdue filters, and assignee management.
 - **Project Members & Collaboration Context:** Project membership bindings (`MANAGER`, `CONTRIBUTOR`, `VIEWER`) integrated with real-time project discussion channels.
 - **Tiered Reporting Engine:** Method-level feature gated reports providing basic summaries, advanced cost and utilization metrics, analytics run rates, and custom escalation matrices.
 - **Expense & Claims Management:** Expense claim logging, approval statuses, and cost categorization.
+
+### Workload & Capacity Management
+- **Resource Allocation Dashboard:** Real-time capacity utilization analytics across all workspace personnel, departments, and active projects.
+- **Weekly Capacity Tracking:** Dynamic calculation based on standard 40 hours/week baseline, evaluating active assigned tasks, load percentages, and workload status (`OPTIMAL`, `OVERLOADED`, `UNDERUTILIZED`).
+- **Departmental Load Aggregation:** Department-level capacity summaries tracking total capacity hours, assigned workload hours, average utilization percentage, and team health status.
+- **Project Allocation Breakdown:** Aggregates task distribution and estimated hour commitments per project to prevent resource bottlenecks.
+- **Personal Workload Insights:** Individual capacity metrics accessible to contributors via Self-Service to view their weekly allocation and active task commitments.
 
 ### Collaboration & Real-Time Workspace
 - **Workspace Channels:** Public and team channels (e.g. `#general`, `#random`) with role-based management, message persistence, and paginated history.
@@ -138,6 +159,22 @@ Self-service billing dashboard with active plan entitlements, Stripe Checkout up
 
 > [!NOTE]
 > **Scope & Architectural Boundaries:** Nexa Collaboration v1 is designed strictly as an **internal workforce communication and coordination layer** scoped to the authenticated tenant workspace. It does not integrate external collaboration suites (e.g., Slack, Microsoft Teams), third-party calendars (e.g., Google Calendar, Outlook 365), voice/video telephony, screen sharing, or AI scheduling.
+
+### Global Multi-Entity Search
+- **Unified Query Engine:** High-performance search endpoint (`/api/search?q=...`) indexing across 4 primary domain entities simultaneously: Employees, Projects, Tasks, and Chat Channels.
+- **Multi-Field Matching:** Searches employee names, emails, positions, and departments; project names, descriptions, and slugs; task titles and descriptions; and chat channel names and topics.
+- **Dedicated Search UI:** Global top-header search modal and dedicated full-page search results view with tabbed entity filtering and direct deep-linking.
+
+### Bulk Operations Engine
+- **Batch Task Status Transitions:** Atomically update execution statuses (`TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`) across arbitrary sets of tasks in a single request.
+- **Batch Task Reassignment:** Bulk reassign multiple tasks to a designated team member with validation of target employee existence.
+- **Bulk User Lifecycle Administration:** Bulk activate or deactivate user accounts with automatic privilege protection preventing self-deactivation or unauthorized role modification.
+- **Comprehensive Audit Tracking:** Every bulk operation logs transactional audit entries detailing modified record counts and actor metadata.
+
+### Reporting & Compliance Data Export
+- **Domain-Specific Reports:** Pre-built, aggregated reporting views for Workforce demographics & attendance, Project portfolio progress & health, Task velocity & priority distributions, and Leave consumption patterns.
+- **Streaming RFC-4180 CSV Export:** Instant, on-the-fly streaming CSV generation (`/api/reports/export/{type}`) supporting `workforce`, `projects`, `tasks`, and `leave` datasets with proper header sanitization, comma/quote escaping, and dynamic filename generation.
+- **Date-Range & Scope Filtering:** Configurable start and end date filtering for targeted compliance audits and quarterly operational reviews.
 
 ### Identity & Security Controls
 - **Dual Authentication Modes:** Native email/password authentication using BCrypt password hashing alongside verified Google Identity Services (GIS) OIDC integration.
@@ -274,6 +311,8 @@ Nexa implements a strict **Schema-Per-Tenant** multi-tenancy model on PostgreSQL
 │   - stripe_customer_id        │               │ • processed_webhook_events    │
 │                               │               │ • departments                 │
 │                               │               │ • employees                   │
+│                               │               │ • leave_requests              │
+│                               │               │ • leave_balances              │
 │                               │               │ • projects                    │
 │                               │               │ • project_members             │
 │                               │               │ • tasks                       │
@@ -284,6 +323,8 @@ Nexa implements a strict **Schema-Per-Tenant** multi-tenancy model on PostgreSQL
 │                               │               │ • notifications               │
 │                               │               │ • calendar_events             │
 │                               │               │ • calendar_event_attendees    │
+│                               │               │                               │
+│                               │               │                               │
 └───────────────────────────────┘               └───────────────────────────────┘
 ```
 
@@ -347,7 +388,14 @@ SUPER_ADMIN
 | Manage Billing & Stripe Portal | Yes | Yes | No | No |
 | Create / Update / Delete Employees | Yes | Yes | No | No |
 | Manage Departments | Yes | Yes | No | No |
-| Export Advanced Reports | Yes | Yes | No | No |
+| Export Reports to CSV (RFC-4180) | Yes | Yes | Yes | No |
+| Review & Approve Leave Requests | Yes | Yes | Yes | No |
+| Submit / Cancel Own Leave Requests | Yes | Yes | Yes | Yes |
+| View Organization Workload & Capacity | Yes | Yes | Yes | No |
+| Access Employee Self-Service (ESS) | Yes | Yes | Yes | Yes |
+| Global Multi-Entity Search | Yes | Yes | Yes | Yes |
+| Bulk Task Status / Reassignment | Yes | Yes | Yes | No |
+| Bulk User Account Status Management | Yes | Yes | No | No |
 | View HRM Directory & Stats | Yes | Yes | Yes | No |
 | View Assigned Tasks / Dashboard | Yes | Yes | Yes | Yes |
 | Record Time Tracking & Attendance | Yes | Yes | Yes | Yes |
@@ -539,23 +587,28 @@ saas-platform/
 │   │   │   │   ├── PingController.java
 │   │   │   │   ├── auth/            # Authentication, JWT, Google OIDC, Refresh rotation
 │   │   │   │   ├── billing/         # Stripe checkout, portal, webhook, entitlements, AOP
+│   │   │   │   ├── bulk/            # Atomic bulk task and user management operations
 │   │   │   │   ├── collaboration/   # Chat channels, DMs, notifications, calendar, WebSocket broker
 │   │   │   │   ├── common/          # Audit logging, email/storage abstractions, exception handling
 │   │   │   │   ├── config/          # SecurityConfig, OpenAPI, CORS, CorrelationIdFilter
-│   │   │   │   ├── domain/          # Entities & repos (User, Customer, Projects, Tasks, Collaboration)
+│   │   │   │   ├── domain/          # Entities & repos (User, Customer, Projects, Tasks, Leave, Collaboration)
 │   │   │   │   ├── hrm/             # HRM service, controller, DTOs
+│   │   │   │   ├── leave/           # Leave request lifecycle, balances, approval workflows
 │   │   │   │   ├── projects/        # Persistent Projects, Tasks, Kanban, Project Members
 │   │   │   │   ├── rbac/            # RBAC verification debug endpoints
-│   │   │   │   ├── reports/         # Tiered reporting endpoints with @RequiresFeature
+│   │   │   │   ├── reports/         # Tiered reporting & streaming RFC-4180 CSV export
+│   │   │   │   ├── search/          # Global multi-entity search engine (Employees, Projects, Tasks, Channels)
+│   │   │   │   ├── selfservice/     # Employee self-service personal portal & task management
 │   │   │   │   ├── tenant/          # Schema-per-tenant resolvers, connection provider, provisioning
-│   │   │   │   └── users/           # User listing, invitation service, privilege checks
+│   │   │   │   ├── users/           # User listing, invitation service, privilege checks
+│   │   │   │   └── workload/        # Workload & capacity analytics across employees, depts, projects
 │   │   │   └── resources/
 │   │   │       ├── application.yaml # Application properties & Hikari pool configuration
 │   │   │       ├── certs/           # RSA keypair for RS256 JWT signing
 │   │   │       └── db/migration/
 │   │   │           ├── global/      # Public schema Flyway migrations (tenant_registry)
-│   │   │           └── tenant/      # Tenant schema migrations (users, billing, hrm, projects, chat)
-│   │   └── test/                    # Integration & unit test suites (163 test methods)
+│   │   │           └── tenant/      # Tenant schema migrations (users, billing, hrm, projects, chat, leave)
+│   │   └── test/                    # Integration & unit test suites (199 test methods)
 │
 └── frontend/                        # React 19 / TypeScript / Vite 8 Application
     ├── Dockerfile                   # Multi-stage Node 22 build with Nginx Alpine runtime
@@ -563,25 +616,30 @@ saas-platform/
     ├── package.json                 # Frontend dependencies & npm scripts
     ├── vite.config.ts               # Vite configuration with Tailwind CSS plugin
     └── src/
-        ├── api/                     # Typed API clients (auth, billing, hrm, projects, chat, calendar)
+        ├── api/                     # Typed API clients (auth, billing, hrm, projects, chat, calendar, leave, selfservice, workload, search, bulk, reports)
         ├── collaboration/           # WebSocket STOMP client over SockJS (websocketClient.ts)
         ├── components/
         │   ├── common/              # Buttons, Badges, Modals, Cards, NexaLogo
         │   ├── landing/             # Public landing page sections
-        │   └── layout/              # AppShell, Sidebar, TopHeader, NotificationDropdown
+        │   ├── layout/              # AppShell, Sidebar, TopHeader, NotificationDropdown
+        │   └── widgets/             # Dashboard widgets (LeaveSummaryWidget, WorkloadWidget)
         ├── context/                 # AuthContext, EntitlementsContext, NotificationContext, ThemeContext
         ├── pages/
         │   ├── auth/                # Login, Signup, AcceptInvite
         │   ├── billing/             # Billing management, Stripe Success/Cancel redirects
         │   ├── calendar/            # Workspace calendar with project/task milestone projections
         │   ├── chat/                # Workspace channels and 1-to-1 direct messaging
-        │   ├── dashboard/           # Main workspace dashboard
+        │   ├── dashboard/           # Main workspace dashboard with leave & workload widgets
         │   ├── hrm/                 # Employee directory, profiles, teams, attendance, tracking
+        │   ├── leave/               # Leave request management, balances, manager approval inbox
         │   ├── operations/          # Claims, Schedules
         │   ├── projects/            # Project list, detail view, members, and embedded Chat tab
-        │   ├── reports/             # Tiered reports & export controls
+        │   ├── reports/             # Tiered reports & streaming RFC-4180 CSV export controls
+        │   ├── search/              # Global multi-entity search results page
+        │   ├── selfservice/         # Employee self-service portal & personal task execution
         │   ├── settings/            # Company, Users, Roles, Integrations, System settings
-        │   └── tasks/               # Enterprise task management & Kanban board
+        │   ├── tasks/               # Enterprise task management & Kanban board
+        │   └── workload/            # Workload & capacity planner (employees, departments, projects)
         └── routes/                  # React Router configuration & ProtectedRoute guards
 ```
 
@@ -635,6 +693,38 @@ saas-platform/
 | `POST` | `/api/hrm/departments` | `ADMIN` + `TEAM_MANAGEMENT` | Creates a new department. |
 | `GET` | `/api/hrm/stats` | `EMPLOYEE_MANAGEMENT` | Aggregates headcount, attendance rate, and billable hours. |
 
+### Employee Self-Service (`/api/self-service`)
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/self-service/profile` | Authenticated | Retrieves the authenticated user's linked employee personnel profile. |
+| `GET` | `/api/self-service/tasks` | Authenticated | Lists tasks assigned to the current employee with optional status filter. |
+| `PATCH` | `/api/self-service/tasks/{taskId}/status` | Authenticated | Updates execution status (`TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`) of user's own task. |
+| `GET` | `/api/self-service/projects` | Authenticated | Lists projects where the current employee is an active member. |
+| `GET` | `/api/self-service/overview` | Authenticated | Aggregates personal statistics (task counts, active projects, leave balances). |
+
+### Leave & Absence Management (`/api/leave`)
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/leave/my` | Authenticated | Lists leave requests submitted by the authenticated user with optional status filter. |
+| `GET` | `/api/leave/balances` | Authenticated | Retrieves leave balances (`VACATION`, `SICK`, `PERSONAL`, `UNPAID`) with allocated/used days. |
+| `POST` | `/api/leave` | Authenticated | Submits a new leave request with date range, leave type, and reason. |
+| `DELETE` | `/api/leave/{id}/cancel` | Authenticated | Cancels a pending, unapproved leave request submitted by current user. |
+| `GET` | `/api/leave/pending` | `MANAGER`+ | Retrieves all pending leave requests across the workspace for review. |
+| `POST` | `/api/leave/{id}/approve` | `MANAGER`+ | Approves a pending leave request, deducts employee balance, and sends notification. |
+| `POST` | `/api/leave/{id}/reject` | `MANAGER`+ | Rejects a pending leave request with optional review notes and sends notification. |
+
+### Workload & Capacity Planner (`/api/workload`)
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/workload/summary` | `MANAGER`+ | Workspace-wide capacity utilization overview, employee counts, and overloaded tallies. |
+| `GET` | `/api/workload/employees` | `MANAGER`+ | Per-employee workload breakdown: active tasks, capacity hours, load %, status. |
+| `GET` | `/api/workload/departments` | `MANAGER`+ | Department-level capacity aggregation, total capacity vs workload hours, status. |
+| `GET` | `/api/workload/projects` | `MANAGER`+ | Project resource allocation: total estimated hours, assigned contributors, task counts. |
+| `GET` | `/api/workload/my` | Authenticated | Authenticated employee's personal capacity metrics and active task load. |
+
 ### Reports & Analytics (`/api/reports`)
 
 | Method | Path | Access / Feature | Description |
@@ -643,6 +733,11 @@ saas-platform/
 | `GET` | `/api/reports/advanced` | `ADVANCED_REPORTS` | Returns monthly workforce cost and utilization projections. |
 | `GET` | `/api/reports/analytics` | `ADVANCED_ANALYTICS` | Returns run-rate and growth analytics. |
 | `GET` | `/api/reports/custom-workflows`| `CUSTOM_WORKFLOWS` | Returns approval and escalation matrix configs. |
+| `GET` | `/api/reports/workforce` | `MANAGER`+ | Workforce personnel distribution, department headcount, and attendance rates. |
+| `GET` | `/api/reports/projects` | `MANAGER`+ | Project portfolio health, status distribution, budgets, and completion percentages. |
+| `GET` | `/api/reports/tasks` | `MANAGER`+ | Task execution velocity, priority distribution, completion rates, and overdue metrics. |
+| `GET` | `/api/reports/leave` | `MANAGER`+ | Leave consumption summary, balance remaining by type, and absence rates. |
+| `GET` | `/api/reports/export/{type}` | `ADMIN`+ | Streams RFC-4180 compliant CSV export for `workforce`, `projects`, `tasks`, or `leave`. |
 | `POST` | `/api/reports/admin-advanced-export` | `ADMIN` + `ADVANCED_REPORTS` | Triggers administrative export of advanced metrics. |
 
 ### Projects & Task Management (`/api/projects`, `/api/tasks`)
@@ -700,6 +795,20 @@ saas-platform/
 | `GET` | `/api/calendar/events/{id}` | `CALENDAR` | Retrieves event details and attendee list by UUID. |
 | `PUT` | `/api/calendar/events/{id}` | `CALENDAR` | Updates event time, location, title, and attendees. |
 | `DELETE` | `/api/calendar/events/{id}` | `CALENDAR` | Deletes a custom calendar event. |
+
+### Global Multi-Entity Search (`/api/search`)
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/search` | Authenticated | Executes unified multi-entity search (`?q=...`) across Employees, Projects, Tasks, and Channels. |
+
+### Bulk Operations Engine (`/api/bulk`)
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `POST` | `/api/bulk/tasks/status` | `MANAGER`+ | Batch updates execution status (`TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`) for a collection of task IDs. |
+| `POST` | `/api/bulk/tasks/assign` | `MANAGER`+ | Batch reassigns a collection of task IDs to a target employee UUID. |
+| `POST` | `/api/bulk/users/status` | `ADMIN`+ | Batch activates or deactivates user accounts with administrative privilege safeguards. |
 
 ### Real-Time WebSocket & STOMP Protocol (`/ws`)
 
@@ -872,23 +981,31 @@ Executed dynamically within each isolated tenant schema:
 - `V10__create_hrm_tables.sql`: Provisions `departments` and `employees` tables with constraints and default seeds.
 - `V11__create_projects_and_tasks_tables.sql`: Provisions persistent `projects`, `project_members`, and `tasks` tables with status enums, priority ratings, foreign keys, and indexes.
 - `V12__create_collaboration_tables.sql`: Provisions `chat_channels`, `chat_messages`, `direct_conversations`, `direct_messages`, `notifications`, `calendar_events`, and `calendar_event_attendees` tables with cascading foreign keys and optimized timestamp indexes.
+- `V13__create_leave_and_workforce_extensions.sql`: Provisions `leave_requests` and `leave_balances` tables with status constraints (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`), category types (`VACATION`, `SICK`, `PERSONAL`, `UNPAID`), balance tracking, and default seed allowances.
 
 ---
 
 ## Testing
 
-The backend contains **163 test methods across 22 test classes** validating the complete multi-tenant lifecycle.
+The backend contains **199 test methods across 30 test classes** validating the complete multi-tenant lifecycle.
 
 ### Test Categories
 
 - **Unit Tests:** Standalone tests exercising pure business logic without database requirements (e.g. `BillingServiceUnitTest`, `StripePropertiesTest`, `GoogleJwtDecoderUnitTest`, `BackendApplicationDotEnvTest`).
 - **Subscription Lifecycle Regression Tests:** Comprehensive test suite (`SubscriptionLifecycleRegressionTest`) validating out-of-order webhook delivery, dunning grace periods, cancellation lifecycles, and deterministic recency selection.
-- **Tenant Isolation Tests:** Multi-tenant integration tests (`CrossTenantIsolationTest`, `ApiCrossTenantIsolationTest`) asserting strict schema boundaries and preventing cross-tenant data leakage.
+- **Tenant Isolation Tests:** Multi-tenant integration tests (`CrossTenantIsolationTest`, `ApiCrossTenantIsolationTest`, `V1_1_MultiTenantIsolationVerificationTest`) asserting strict schema boundaries and preventing cross-tenant data leakage across all entities.
 - **RBAC & Privilege Escalation Tests:** Verifies role hierarchy propagation and validates that `ADMIN` accounts receive `403 FORBIDDEN` when attempting to invite `SUPER_ADMIN` users (`UserInviteFlowTest`, `RbacHierarchyTest`).
 - **Billing & Webhook Tests:** Mocked Stripe API tests exercising Checkout session generation, Portal sessions, and signature-verified webhook processing (`BillingControllerTest`, `StripeWebhookControllerTest`).
 - **Feature Entitlement Tests:** AOP validation ensuring methods guarded by `@RequiresFeature` reject access when the tenant lacks the required subscription tier (`FeatureEntitlementTest`).
 - **Projects & Task Management Tests:** Dedicated suites (`ProjectAndTaskIntegrationTest`, `ProjectTaskFinalBusinessFlowTest`) verifying project CRUD, task creation, Kanban workflow transitions, project membership assignment, and audit logs.
 - **Collaboration & Real-Time Messaging Tests:** Integration test suites (`ChatIntegrationTest`, `NotificationIntegrationTest`, `CalendarIntegrationTest`, `CollaborationFinalBusinessFlowTest`) testing channel creation, project-linked channels, 1-to-1 direct messaging, unread notification counters, calendar milestone projections, and STOMP topic isolation.
+- **Leave & Absence Workflow Tests:** Integration suite (`LeaveWorkflowIntegrationTest`) validating leave application, balance deduction on approval, manager rejection with notes, user self-cancellation, and automated notifications.
+- **Employee Self-Service Tests:** Integration suite (`SelfServiceIntegrationTest`) testing profile resolution, personal assigned task querying, one-click task status transitions, active project rosters, and overview statistics.
+- **Workload & Capacity Management Tests:** Integration suite (`WorkloadIntegrationTest`) verifying weekly capacity calculations (40h baseline), employee load percentages, department aggregations, project workload allocations, and personal capacity queries.
+- **Reporting & Streaming CSV Export Tests:** Integration suite (`ReportsAndExportIntegrationTest`) validating reporting data models and asserting RFC-4180 streaming CSV export generation, headers, and quote/comma escaping for all datasets.
+- **Global Multi-Entity Search Tests:** Integration suite (`GlobalSearchIntegrationTest`) verifying unified search across employees, projects, tasks, and channels with multi-field token matching and empty query handling.
+- **Bulk Operations Tests:** Integration suite (`BulkOperationsIntegrationTest`) testing batch task status updates, batch task reassignments, batch user activation/deactivation, and atomic transaction rollback on failure.
+- **End-to-End Business Flow Tests:** Comprehensive multi-domain journey test (`V1_1_EndToEndBusinessFlowTest`) exercising cross-module workflows across leave, workload, self-service, search, bulk updates, and reporting.
 
 ### Running Backend Tests
 
@@ -904,7 +1021,7 @@ Run the complete integration suite (requires active Docker daemon for Testcontai
 cd backend
 ./mvnw test
 ```
-*Result:* `163 tests, 0 failures, 0 errors, 0 skipped`
+*Result:* `199 tests, 0 failures, 0 errors, 0 skipped` (100% pass rate)
 
 ### Running Frontend Validation
 

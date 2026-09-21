@@ -12,6 +12,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
 
     List<ProjectMember> findByProjectId(UUID projectId);
 
+    List<ProjectMember> findByMemberId(UUID memberId);
+
     Optional<ProjectMember> findByProjectIdAndMemberId(UUID projectId, UUID memberId);
 
     void deleteByProjectIdAndMemberId(UUID projectId, UUID memberId);

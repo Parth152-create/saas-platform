@@ -34,7 +34,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/app/hrm/employees?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/app/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -45,7 +45,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       id: 'profile',
       label: user?.email || 'User Profile',
       icon: <User className="w-4 h-4" />,
-      onClick: () => navigate('/app/settings/company'),
+      onClick: () => navigate('/app/self-service'),
     },
     {
       id: 'billing',

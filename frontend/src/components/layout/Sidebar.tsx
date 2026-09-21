@@ -22,6 +22,8 @@ import {
   Lock,
   MessageSquare,
   CalendarDays,
+  Activity,
+  Search,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useEntitlements } from '../../context/EntitlementsContext';
@@ -66,11 +68,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       groupTitle: 'Overview',
       items: [
         { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
+        { label: 'Self-Service', path: '/app/self-service', icon: UserCheck },
         { label: 'Projects', path: '/app/projects', icon: FolderKanban, requiredFeature: 'PROJECT_MANAGEMENT', tierRequired: 'STARTER' },
         { label: 'Expense & Claims', path: '/app/claims', icon: FileStack, requiredFeature: 'CLAIMS', tierRequired: 'STARTER' },
         { label: 'Tasks Board', path: '/app/tasks', icon: CheckSquare, requiredFeature: 'TASK_MANAGEMENT', tierRequired: 'STARTER' },
         { label: 'Schedule Planner', path: '/app/schedule', icon: Calendar, requiredFeature: 'WORK_SCHEDULES', tierRequired: 'STARTER' },
         { label: 'Reports & Analytics', path: '/app/reports', icon: BarChart3, requiredFeature: 'BASIC_REPORTS', tierRequired: 'STARTER' },
+        { label: 'Global Search', path: '/app/search', icon: Search },
       ],
     },
     {
@@ -78,6 +82,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { label: 'HR Overview', path: '/app/hrm', icon: Users, requiredFeature: 'EMPLOYEE_MANAGEMENT', tierRequired: 'STARTER' },
         { label: 'Employee Directory', path: '/app/hrm/employees', icon: Users, requiredFeature: 'EMPLOYEE_MANAGEMENT', tierRequired: 'STARTER' },
+        { label: 'Leave Management', path: '/app/leave', icon: Calendar, requiredFeature: 'ATTENDANCE', tierRequired: 'STARTER' },
+        { label: 'Workload & Capacity', path: '/app/workload', icon: Activity, requiredFeature: 'BASIC_REPORTS', tierRequired: 'STARTER' },
         { label: 'Teams & Departments', path: '/app/hrm/teams', icon: Building2, requiredFeature: 'TEAM_MANAGEMENT', tierRequired: 'STARTER' },
         { label: 'Attendance & Leave', path: '/app/hrm/attendance', icon: UserCheck, requiredFeature: 'ATTENDANCE', tierRequired: 'STARTER' },
         { label: 'Time Tracking', path: '/app/hrm/time-tracking', icon: Clock, requiredFeature: 'TIME_TRACKING', tierRequired: 'STARTER' },

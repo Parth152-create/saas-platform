@@ -407,7 +407,7 @@ public class ProjectService {
         return days + " day" + (days > 1 ? "s" : "") + " ago";
     }
 
-    private ProjectResponse toProjectResponse(Project project) {
+    public ProjectResponse toProjectResponse(Project project) {
         int totalTasks = (int) taskRepository.countByProjectId(project.getId());
         int doneTasks = (int) taskRepository.countByProjectIdAndStatus(project.getId(), TaskStatus.DONE);
         int overdueTasks = (int) taskRepository.countByProjectIdAndDueDateBeforeAndStatusNot(

@@ -68,6 +68,12 @@ public class Project {
 
     public Project(String name, String description, String client, ProjectStatus status,
                    ProjectPriority priority, LocalDate startDate, LocalDate dueDate,
+                   BigDecimal budget, UUID ownerId) {
+        this(name, description, client, status, priority, startDate, dueDate, budget, ownerId, null);
+    }
+
+    public Project(String name, String description, String client, ProjectStatus status,
+                   ProjectPriority priority, LocalDate startDate, LocalDate dueDate,
                    BigDecimal budget, UUID ownerId, String ownerName) {
         this.name = name;
         this.description = description;
