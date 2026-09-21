@@ -23,6 +23,15 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Create test environment file
+        run: |
+          cat > .env <<'EOF'
+          STRIPE_SECRET_KEY=sk_test_ci_placeholder
+          STRIPE_PRICE_PRO_ID=price_ci_pro
+          STRIPE_PRICE_ENTERPRISE_ID=price_ci_enterprise
+          STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:5173/checkout/success
+          EOF
+
       - name: Build and test
         working-directory: backend
         run: ./mvnw -B clean verify
